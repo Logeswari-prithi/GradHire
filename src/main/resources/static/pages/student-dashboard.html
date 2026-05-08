@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Student Portal - GradHire</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class'}</script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="/css/main.css"/>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors">
+<div id="toast"></div>
+<aside class="sidebar">
+  <div class="px-4 py-6">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-graduation-cap text-white"></i></div>
+      <div><h1 class="text-white font-bold text-lg">GradHire</h1><p class="text-blue-300 text-xs">Student Portal</p></div>
+    </div>
+    <nav class="space-y-0.5">
+      <button class="nav-item active" onclick="show('profile')"><i class="fas fa-user"></i>My Profile</button>
+      <button class="nav-item" onclick="show('drives')"><i class="fas fa-building"></i>Upcoming Companies</button>
+      <button class="nav-item" onclick="show('placements')"><i class="fas fa-briefcase"></i>My Placements</button>
+      <button class="nav-item" onclick="show('report')"><i class="fas fa-file-pdf"></i>Download Report</button>
+      <button class="nav-item" onclick="show('issue')"><i class="fas fa-bug"></i>Report Issue</button>
+      <button class="nav-item relative" onclick="show('notifications')"><i class="fas fa-bell"></i>Notifications <span id="nBadge" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+    </nav>
+  </div>
+  <div id="sidebarUser"></div>
+  <div class="px-4 py-3 border-t border-white/10">
+    <button onclick="toggleTheme()" class="nav-item"><i class="fas fa-adjust"></i>Toggle Theme</button>
+    <button onclick="logout()" class="nav-item" style="color:#fca5a5"><i class="fas fa-sign-out-alt"></i>Logout</button>
+  </div>
+</aside>
+<main class="main-content">
+  <header class="bg-white dark:bg-gray-800 shadow-sm px-5 py-3.5 flex items-center gap-3 sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
+    <button onclick="toggleSidebar()" class="md:hidden text-gray-500"><i class="fas fa-bars"></i></button>
+    <h2 id="pt" class="font-semibold text-gray-800 dark:text-white">My Profile</h2>
+  </header>
+  <div class="p-5">
+    <section id="s-profile" class="fade-in">
+      <div class="w-full mx-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="relative group cursor-pointer" onclick="document.getElementById('photoInput').click()">
+              <div id="av" class="w-16 h-16 bg-[#1E3A8A] rounded-2xl flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 overflow-hidden">
+                ?
+              </div>
+              <div class="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <i class="fas fa-camera text-white"></i>
+              </div>
+            </div>
+            <input type="file" id="photoInput" class="hidden" accept="image/*" onchange="uploadPhoto(event)"/>
+            <div>
+              <h2 id="pn" class="text-lg font-bold dark:text-white">Loading...</h2>
+              <p id="pr" class="text-sm text-gray-500 dark:text-gray-400"></p>
+              <p id="pe" class="text-xs text-gray-400"></p>
+            </div>
+          </div>
+          <div id="studentInfoBadges" class="flex flex-wrap gap-2 mb-6"></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Register Number</label><input id="freg" class="form-input bg-gray-100 dark:bg-gray-700" readonly/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Batch</label><input id="fbat" class="form-input bg-gray-100 dark:bg-gray-700" readonly/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Department</label><input id="fd" class="form-input" placeholder="Computer Science"/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Phone</label><input id="fph" class="form-input" placeholder="+91 9876543210"/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Date of Birth</label><input id="fdob" type="date" class="form-input"/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">CGPA</label><input id="fc" type="number" step="0.01" min="0" max="10" class="form-input" placeholder="8.5"/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">10th %</label><input id="f10" class="form-input" placeholder="85.5"/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">12th %</label><input id="f12" class="form-input" placeholder="78.3"/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">UG %</label><input id="fug" class="form-input" placeholder="80.0"/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Career Gap</label><input id="fgap" class="form-input" placeholder="e.g. 1 year"/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Current Backlogs</label><input id="fcb" type="number" class="form-input" placeholder="0"/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">History of Backlogs</label><input id="fhb" type="number" class="form-input" placeholder="0"/></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Skills</label><input id="fsk" class="form-input" placeholder="Java, Python, Spring Boot, React..."/></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Languages</label><input id="flan" class="form-input" placeholder="English, Hindi..."/></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Internship Experience</label><textarea id="fint" class="form-input" placeholder="Describe your internships..."></textarea></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Project Details</label><textarea id="fproj" class="form-input" placeholder="Describe your projects..."></textarea></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Certifications</label><textarea id="fcert" class="form-input" placeholder="Any certifications..."></textarea></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">LinkedIn</label><input id="fli" class="form-input" placeholder="https://linkedin.com/in/..."/></div>
+            <div><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">GitHub</label><input id="fgh" class="form-input" placeholder="https://github.com/..."/></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase">Address</label><textarea id="fa" class="form-input" placeholder="City, State"></textarea></div>
+          </div>
+          <button onclick="saveProfile()" class="btn-primary mt-5"><i class="fas fa-save"></i> Save Profile</button>
+        </div>
+      </div>
+    </section>
+    <section id="s-drives" class="hidden fade-in">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-5 w-full mx-auto">
+        <h3 class="font-semibold dark:text-white mb-4">Upcoming Placement Drives</h3>
+        <div id="sd"><p class="text-gray-400 text-center py-8">Loading...</p></div>
+      </div>
+    </section>
+    <section id="s-placements" class="hidden fade-in">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-5 w-full mx-auto">
+        <h3 class="font-semibold dark:text-white mb-4">My Placement History</h3>
+        <div id="mp"><p class="text-gray-400 text-center py-8">Loading...</p></div>
+      </div>
+    </section>
+    <section id="s-report" class="hidden fade-in">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full mx-auto text-center">
+        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-file-pdf text-red-500 text-3xl"></i>
+        </div>
+        <h3 class="font-semibold dark:text-white mb-2">Download Profile Report</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-5">Complete PDF with your profile and placement history</p>
+        <button onclick="dlPDF()" class="btn-primary w-full justify-center"><i class="fas fa-download"></i> Download PDF</button>
+      </div>
+    </section>
+    <section id="s-issue" class="hidden fade-in">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-5 w-full mx-auto">
+        <h3 class="font-semibold dark:text-white mb-4">Report an Issue</h3>
+        <div class="space-y-3">
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">SUBJECT *</label><input id="is" class="form-input" placeholder="Brief subject"/></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">DESCRIPTION *</label><textarea id="id" class="form-input" rows="4" placeholder="Describe the issue..."></textarea></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">SEVERITY</label><select id="isv" class="form-input"><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option></select></div>
+          <button onclick="submitIssue()" class="btn-primary w-full justify-center"><i class="fas fa-paper-plane"></i> Submit</button>
+        </div>
+      </div>
+    </section>
+    <section id="s-notifications" class="hidden fade-in">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-5 w-full mx-auto">
+        <h3 class="font-semibold dark:text-white mb-4">My Notifications</h3>
+        <div id="nl"><p class="text-gray-400 text-center py-8">Loading...</p></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- Placement History Modal -->
+<div id="placementHistoryModal" class="modal-backdrop hidden" style="z-index: 60;" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal p-6 dark:bg-gray-800 max-w-5xl w-full">
+    <div class="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+      <div>
+        <h3 class="font-semibold dark:text-white text-lg">My Placement Performance History</h3>
+      </div>
+      <button onclick="document.getElementById('placementHistoryModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+    </div>
+    <div class="max-h-[65vh] overflow-y-auto pr-2 space-y-6" id="phContent">
+      <p class="text-center text-gray-400 py-6">Loading...</p>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+let sd = null;
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!checkAuth('STUDENT')) return;
+    await loadProfile();
+    await loadNotifications();
+});
+async function loadProfile() {
+    const u = getUser();
+    if (!u || !u.userId) {
+        showToast('Session expired. Please login again.', 'error');
+        setTimeout(() => logout(), 1500);
+        return;
+    }
+    const d = await apiFetch('/student/by-user/'+u.userId);
+    if (!d || !d.success || !d.data) {
+        document.getElementById('pn').textContent = u.fullName || 'Student';
+        document.getElementById('pr').textContent = '';
+        document.getElementById('pe').textContent = u.email || '';
+        document.getElementById('av').textContent = (u.fullName || 'S').charAt(0).toUpperCase();
+        showToast('Profile not found. Contact admin.', 'error');
+        return;
+    }
+    sd = d.data;
+    const name = sd.fullName || u.fullName || 'Student';
+    document.getElementById('pn').textContent = name;
+    document.getElementById('pr').textContent = 'Reg: ' + (sd.registerNumber || '—');
+    document.getElementById('pe').textContent = sd.email || u.email || '';
+    
+    if (sd.profilePhotoUrl) {
+        document.getElementById('av').innerHTML = `<img src="${sd.profilePhotoUrl}" class="w-full h-full object-cover" alt="Profile" onerror="this.outerHTML='?'"/>`;
+    } else {
+        document.getElementById('av').textContent = name.charAt(0).toUpperCase();
+    }
+    
+    document.getElementById('freg').value = sd.registerNumber || '';
+    document.getElementById('fbat').value = sd.batch || (sd.batchYear ? 'Batch ' + sd.batchYear : '') || '';
+    document.getElementById('fc').value = sd.cgpa || '';
+    document.getElementById('fd').value = sd.department || '';
+    document.getElementById('fph').value = sd.phone || '';
+    document.getElementById('fdob').value = sd.dob || '';
+    document.getElementById('f10').value = sd.tenthPercent || '';
+    document.getElementById('f12').value = sd.twelfthPercent || '';
+    document.getElementById('fug').value = sd.ugPercentage || '';
+    document.getElementById('fgap').value = sd.careerGap || '';
+    document.getElementById('fcb').value = sd.currentBacklogs != null ? sd.currentBacklogs : '';
+    document.getElementById('fhb').value = sd.historyOfBacklogs != null ? sd.historyOfBacklogs : '';
+    document.getElementById('fsk').value = sd.skills || '';
+    document.getElementById('flan').value = sd.languages || '';
+    document.getElementById('fint').value = Array.isArray(sd.internships) ? sd.internships.join(', ') : (sd.internships || '');
+    document.getElementById('fproj').value = Array.isArray(sd.projects) ? sd.projects.join(', ') : (sd.projects || '');
+    document.getElementById('fcert').value = Array.isArray(sd.certifications) ? sd.certifications.join(', ') : (sd.certifications || '');
+    document.getElementById('fli').value = sd.linkedinUrl || '';
+    document.getElementById('fgh').value = sd.githubUrl || '';
+    document.getElementById('fa').value = sd.address || '';
+
+    // Display batch and status info
+    const batchDisplay = sd.batch || (sd.batchYear ? 'Batch ' + sd.batchYear : '');
+    const statusDisplay = sd.placementStatus || sd.status || '';
+    const infoDiv = document.getElementById('studentInfoBadges');
+    if (infoDiv) {
+        let html = '';
+        if (sd.department) html += '<span class="badge badge-admin">' + sd.department + '</span> ';
+        if (batchDisplay) html += '<span class="badge badge-staff">' + batchDisplay + '</span> ';
+        if (statusDisplay) html += '<span class="badge badge-' + statusDisplay.toLowerCase() + '">' + statusDisplay + '</span>';
+        infoDiv.innerHTML = html;
+    }
+}
+async function saveProfile() {
+    if (!sd) { showToast('Profile not loaded yet', 'error'); return; }
+    const btn = document.querySelector('[onclick="saveProfile()"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
+    const dto = {
+        cgpa: document.getElementById('fc').value ? parseFloat(document.getElementById('fc').value) : null,
+        department: document.getElementById('fd').value.trim() || null,
+        phone: document.getElementById('fph').value.trim() || null,
+        dob: document.getElementById('fdob').value || null,
+        tenthPercent: document.getElementById('f10').value.trim() || null,
+        twelfthPercent: document.getElementById('f12').value.trim() || null,
+        ugPercentage: document.getElementById('fug').value.trim() || null,
+        careerGap: document.getElementById('fgap').value.trim() || null,
+        currentBacklogs: document.getElementById('fcb').value ? parseInt(document.getElementById('fcb').value) : 0,
+        historyOfBacklogs: document.getElementById('fhb').value ? parseInt(document.getElementById('fhb').value) : 0,
+        skills: document.getElementById('fsk').value.trim() || null,
+        languages: document.getElementById('flan').value.trim() || null,
+        internships: document.getElementById('fint').value.trim() || null,
+        projects: document.getElementById('fproj').value.trim() || null,
+        certifications: document.getElementById('fcert').value.trim() || null,
+        linkedinUrl: document.getElementById('fli').value.trim() || null,
+        githubUrl: document.getElementById('fgh').value.trim() || null,
+        address: document.getElementById('fa').value.trim() || null
+    };
+    try {
+        const d = await apiFetch('/student/profile', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(dto) });
+        if (d?.success) {
+            showToast('Profile saved!', 'success');
+            sd = d.data || sd;
+            // Refresh header display
+            const name = sd.fullName || getUser().fullName || 'Student';
+            document.getElementById('pn').textContent = name;
+            document.getElementById('av').textContent = name.charAt(0).toUpperCase();
+        } else {
+            showToast(d?.message || 'Save failed', 'error');
+        }
+    } catch(e) {
+        showToast('Network error while saving', 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Save Profile'; }
+    }
+}
+
+async function uploadPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { showToast('Image too large (Max 2MB)', 'error'); return; }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const res = await fetch('/api/student/photo', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + getToken() },
+            body: formData
+        });
+        const d = await res.json();
+        if (d?.success) {
+            showToast('Photo uploaded successfully', 'success');
+            if (sd) sd.profilePhotoUrl = d.data;
+            document.getElementById('av').innerHTML = `<img src="${d.data}" class="w-full h-full object-cover" alt="Profile" />`;
+        } else {
+            showToast(d?.message || 'Upload failed', 'error');
+        }
+    } catch(err) {
+        showToast('Network error during upload', 'error');
+    }
+}
+function show(n) {
+    ['profile','drives','placements','report','issue','notifications'].forEach(x=>document.getElementById('s-'+x).classList.add('hidden'));
+    document.getElementById('s-'+n).classList.remove('hidden');
+    document.getElementById('pt').textContent = n.charAt(0).toUpperCase()+n.slice(1).replace('Drives', 'Upcoming Companies');
+    if (n==='placements') loadPlacements();
+    if (n==='drives') loadDrives();
+}
+async function loadPlacements() {
+    if (!sd) { document.getElementById('mp').innerHTML='<p class="text-gray-400 text-center py-8">Profile not loaded yet</p>'; return; }
+    const d = await apiFetch('/placements/student/'+sd.id);
+    const div = document.getElementById('mp');
+    if (!d || !d.success || !d.data || !d.data.length) { div.innerHTML='<p class="text-gray-400 text-center py-8">No placements found</p>'; return; }
+    div.innerHTML = `
+    <div class="mb-4 flex justify-end">
+        <button onclick="viewPlacementHistory()" class="btn-primary btn-sm"><i class="fas fa-history"></i> View Detailed History & Rounds</button>
+    </div>
+    <div class="table-wrapper"><table class="data-table">
+        <thead><tr><th>Company</th><th>Role</th><th>Package</th><th>Applied</th><th>Status</th></tr></thead>
+        <tbody>${d.data.map(p=>`<tr>
+            <td class="font-medium dark:text-white text-sm">${p.companyName}</td>
+            <td class="text-sm text-gray-600 dark:text-gray-400">${p.jobRole||'—'}</td>
+            <td class="text-sm">${p.packageOffered?p.packageOffered+' LPA':'—'}</td>
+            <td class="text-xs text-gray-500">${p.applicationDate?new Date(p.applicationDate).toLocaleDateString('en-IN'):'—'}</td>
+            <td><span class="badge badge-${(p.overallStatus||'').toLowerCase()}">${p.overallStatus}</span></td>
+        </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+async function viewPlacementHistory() {
+    if (!sd) return;
+    document.getElementById('placementHistoryModal').classList.remove('hidden');
+    document.getElementById('phContent').innerHTML = '<p class="text-center text-gray-400 py-6">Loading...</p>';
+    
+    const res = await apiFetch('/placements/history/student/' + sd.id);
+    if (!res?.success) {
+        document.getElementById('phContent').innerHTML = '<p class="text-red-500 text-center">Failed to load history</p>';
+        return;
+    }
+    
+    const { placements, logs } = res.data;
+    let html = '';
+    
+    if (!placements || placements.length === 0) {
+        html += '<p class="text-gray-500 dark:text-gray-400 text-center py-6">No placement records found.</p>';
+    } else {
+        for (const p of placements) {
+            const roundsRes = await apiFetch('/placements/' + p.id + '/rounds');
+            const rounds = roundsRes?.success ? roundsRes.data : [];
+            
+            html += `
+            <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                <div class="mb-3">
+                    <h4 class="font-bold text-lg dark:text-white">${p.companyName}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">${p.jobRole || 'N/A'} • ${p.packageOffered ? p.packageOffered + ' LPA' : 'N/A'} • <span class="badge badge-${(p.overallStatus||'').toLowerCase()}">${p.overallStatus}</span></p>
+                </div>
+                <div class="mt-4">
+                    <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Rounds</h5>
+                    ${rounds.length === 0 ? '<p class="text-sm text-gray-400">No rounds tracked yet.</p>' : `
+                    <div class="space-y-2">
+                        ${rounds.map(r => `
+                        <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium text-sm dark:text-white">${r.roundName}</span>
+                                    <span class="badge badge-${(r.status||'').toLowerCase()}">${r.status}</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    ${r.interviewDate ? 'Date: ' + r.interviewDate : ''} 
+                                    ${r.notes ? '• Notes: ' + r.notes : ''} 
+                                </div>
+                            </div>
+                        </div>
+                        `).join('')}
+                    </div>
+                    `}
+                </div>
+            </div>`;
+        }
+    }
+    document.getElementById('phContent').innerHTML = html;
+}
+async function loadDrives() {
+    if (!sd) return;
+    const d = await apiFetch('/placement-drives/ongoing');
+    const div = document.getElementById('sd');
+    if (!d || !d.success || !d.data || !d.data.length) { div.innerHTML='<p class="text-gray-400 text-center py-8">No upcoming drives</p>'; return; }
+    div.innerHTML = `<div class="table-wrapper"><table class="data-table">
+        <thead><tr><th>Company</th><th>Role</th><th>Min CGPA</th><th>Deadline</th><th>Action</th></tr></thead>
+        <tbody>${d.data.map(p=>`<tr>
+            <td class="font-medium dark:text-white text-sm">${p.companyName}</td>
+            <td class="text-sm text-gray-600 dark:text-gray-400">${p.jobRole||'—'}</td>
+            <td class="text-sm">${p.minCgpa||'—'}</td>
+            <td class="text-xs text-red-500">${p.applicationDeadline||'—'}</td>
+            <td><button onclick="applyDrive(${p.id})" class="btn-primary btn-sm">Apply</button></td>
+        </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+async function applyDrive(id) {
+    if (!confirm('Apply for this drive?')) return;
+    const res = await apiFetch('/placement-drives/' + id + '/apply', { method: 'POST' });
+    if (res?.success) { showToast('Applied successfully', 'success'); loadPlacements(); show('placements'); }
+    else showToast(res?.message || 'Failed to apply', 'error');
+}
+function dlPDF() {
+    if (!sd){showToast('Profile not loaded','error');return;}
+    downloadAuthFile('/api/reports/student/'+sd.id+'/pdf', 'resume.pdf');
+}
+async function submitIssue() {
+    const s=document.getElementById('is').value.trim();
+    const desc=document.getElementById('id').value.trim();
+    if (!s||!desc){showToast('Fill all fields','error');return;}
+    try {
+        const res=await fetch('/api/reports',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':'Bearer '+getToken()},
+            body:JSON.stringify({subject:s,message:desc,severity:document.getElementById('isv').value})
+        });
+        const d=await res.json();
+        if(d?.success){showToast('Issue reported!','success');document.getElementById('is').value='';document.getElementById('id').value='';}
+        else showToast(d?.message||'Failed to submit','error');
+    } catch(e) {
+        showToast('Network error','error');
+    }
+}
+
+async function loadNotifications() {
+    const uc = await apiFetch('/student/notifications/unread-count');
+    if (uc?.success) {
+        const b = document.getElementById('nBadge');
+        if (uc.data > 0) { b.textContent = uc.data; b.classList.remove('hidden'); }
+        else b.classList.add('hidden');
+    }
+    const d = await apiFetch('/student/notifications');
+    const div = document.getElementById('nl');
+    if (!d?.success || !d.data || !d.data.length) {
+        div.innerHTML = '<p class="text-gray-400 text-center py-8">No notifications found.</p>';
+        return;
+    }
+    div.innerHTML = d.data.map(n => {
+        let bgClass = n.readStatus ? 'bg-gray-50 dark:bg-gray-700/30' : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800';
+        let dotClass = n.readStatus ? 'bg-gray-300' : 'bg-blue-500';
+        if (n.actionType === 'REPORT_SOLVED') {
+            bgClass = 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800';
+            dotClass = 'bg-green-500';
+        }
+        return `
+        <div class="flex gap-3 p-3 rounded-xl mb-2 cursor-pointer transition ${bgClass}"
+             onclick="markNotifRead(${n.id}, this)">
+          <div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${dotClass}"></div>
+          <div class="flex-1">
+            <p class="font-medium text-sm ${n.actionType === 'REPORT_SOLVED' ? 'text-green-800 dark:text-green-300' : 'dark:text-white'}">${n.message || 'Notification'}</p>
+            <p class="text-xs text-gray-400 mt-1">${n.time ? new Date(n.time).toLocaleString('en-IN') : ''} • By: ${n.createdBy || 'System'}</p>
+          </div>
+        </div>`
+    }).join('');
+}
+
+async function markNotifRead(id, el) {
+    if (el.classList.contains('bg-gray-50') || el.classList.contains('dark:bg-gray-700/30')) return; // Already read
+    const d = await apiFetch('/student/notifications/' + id + '/read', { method: 'PATCH', headers: authHeaders() });
+    if (d?.success) loadNotifications();
+}
+</script>
+</body>
+</html>

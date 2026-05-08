@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GradHire - Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex items-center justify-center transition-colors">
+
+<div id="toast"></div>
+
+<div class="w-full max-w-md px-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+
+    <!-- HEADER -->
+    <div class="bg-gradient-to-br from-[#005CB4] to-[#002A5C] px-8 py-10 text-center">
+      <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <i class="fas fa-graduation-cap text-white text-3xl"></i>
+      </div>
+      <h1 class="text-3xl font-bold text-white">GradHire</h1>
+      <p class="text-blue-200 text-sm mt-1">College Placement & Monitoring Portal</p>
+    </div>
+
+    <div class="px-8 py-8">
+
+      <div id="errBox"
+           class="hidden bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-lg mb-5 flex items-center gap-2">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="errText"></span>
+      </div>
+
+      <div class="space-y-4">
+
+        <!-- ROLE SELECTION -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Your Role</label>
+          <div class="grid grid-cols-3 gap-3">
+            <button type="button" onclick="selectRole('ADMIN')" id="roleBtn_ADMIN" class="py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 font-semibold text-sm transition hover:border-[#005CB4] hover:text-[#005CB4]">Admin</button>
+            <button type="button" onclick="selectRole('STAFF')" id="roleBtn_STAFF" class="py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 font-semibold text-sm transition hover:border-[#005CB4] hover:text-[#005CB4]">Staff</button>
+            <button type="button" onclick="selectRole('STUDENT')" id="roleBtn_STUDENT" class="py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 font-semibold text-sm transition hover:border-[#005CB4] hover:text-[#005CB4]">Student</button>
+          </div>
+        </div>
+
+        <!-- USERNAME -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+          <div class="relative">
+            <i class="fas fa-user absolute left-3 top-3 text-gray-400 text-sm"></i>
+            <input id="username" type="text" placeholder="" autocomplete="off"
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 pl-9 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#005CB4]"/>
+          </div>
+        </div>
+
+        <!-- PASSWORD -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+          <div class="relative">
+            <i class="fas fa-lock absolute left-3 top-3 text-gray-400 text-sm"></i>
+            <input id="password" type="password" placeholder="" autocomplete="new-password"
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 pl-9 pr-10 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#005CB4]"/>
+            <button type="button" onclick="togglePwd()" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 p-0.5">
+              <i id="eyeIcon" class="fas fa-eye text-sm"></i>
+            </button>
+          </div>
+          <div class="flex justify-between items-center mt-1">
+            <a href="/pages/register.html" class="text-sm font-medium text-[#005CB4] hover:text-[#004494] dark:text-blue-400 dark:hover:text-blue-300">New user? Register</a>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Contact Admin for password reset</p>
+          </div>
+        </div>
+
+        <!-- LOGIN BUTTON -->
+        <button id="loginBtn" onclick="doLogin()"
+                class="w-full bg-[#005CB4] hover:bg-[#004494] active:bg-[#002A5C] text-white font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2 mt-2">
+          <i id="spinner" class="fas fa-spinner fa-spin hidden"></i>
+          <span id="btnText">Sign In</span>
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- DARK MODE BUTTON -->
+  <div class="text-center mt-4">
+    <button onclick="toggleTheme()"
+            class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white text-sm flex items-center gap-2 mx-auto transition">
+      <i class="fas fa-moon dark:hidden"></i>
+      <i class="fas fa-sun hidden dark:inline"></i>
+      <span class="dark:hidden">Dark Mode</span>
+      <span class="hidden dark:inline">Light Mode</span>
+    </button>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    currentRole = null;
+  });
+
+  function togglePwd() {
+    const inp = document.getElementById('password');
+    const icon = document.getElementById('eyeIcon');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    icon.className = inp.type === 'password' ? 'fas fa-eye text-sm' : 'fas fa-eye-slash text-sm';
+  }
+
+  let currentRole = null;
+
+  function selectRole(role) {
+    currentRole = role;
+    ['ADMIN', 'STAFF', 'STUDENT'].forEach(r => {
+      const btn = document.getElementById('roleBtn_' + r);
+      if (r === role) {
+        btn.classList.add('border-[#005CB4]', 'text-[#005CB4]', 'bg-blue-50', 'dark:bg-blue-900/20');
+        btn.classList.remove('border-gray-200', 'text-gray-500', 'dark:border-gray-600', 'dark:text-gray-400');
+      } else {
+        btn.classList.remove('border-[#005CB4]', 'text-[#005CB4]', 'bg-blue-50', 'dark:bg-blue-900/20');
+        btn.classList.add('border-gray-200', 'text-gray-500', 'dark:border-gray-600', 'dark:text-gray-400');
+      }
+    });
+  }
+
+  async function doLogin() {
+    if (!currentRole) { showErr('Please select your role'); return; }
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    if (!username) { showErr('Username is required'); return; }
+    if (!password) { showErr('Password is required'); return; }
+
+    const btn = document.getElementById('loginBtn');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btnText');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+    btnText.textContent = 'Signing in...';
+    document.getElementById('errBox').classList.add('hidden');
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, role: currentRole })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('user', JSON.stringify(data.data));
+
+        if (data.data.firstLogin) {
+          window.location.href = '/pages/change-password.html';
+          return;
+        }
+        const r = data.data.role;
+        if (r === 'ADMIN') window.location.href = '/pages/admin-dashboard.html';
+        else if (r === 'STAFF') window.location.href = '/pages/staff-dashboard.html';
+        else window.location.href = '/pages/student-dashboard.html';
+      } else {
+        showErr(data.message || 'Invalid username, password, or role');
+      }
+    } catch (e) {
+      showErr('Server error. Is the backend running?');
+    } finally {
+      btn.disabled = false;
+      spinner.classList.add('hidden');
+      btnText.textContent = 'Sign In';
+    }
+  }
+
+  function showErr(msg) {
+    document.getElementById('errText').textContent = msg;
+    document.getElementById('errBox').classList.remove('hidden');
+  }
+</script>
+
+</body>
+</html>
