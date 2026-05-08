@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Staff Dashboard - GradHire</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class'}</script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="/css/main.css"/>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors">
+<div id="toast"></div>
+<aside class="sidebar">
+  <div class="px-4 py-6">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-graduation-cap text-white"></i></div>
+      <div><h1 class="text-white font-bold text-lg">GradHire</h1><p class="text-blue-300 text-xs">Staff Portal</p></div>
+    </div>
+    <nav class="space-y-0.5">
+      <button class="nav-item active" onclick="show('students')"><i class="fas fa-user-graduate"></i>Students</button>
+      <button class="nav-item" onclick="show('placements')"><i class="fas fa-briefcase"></i>Placements</button>
+      <button class="nav-item" onclick="show('drives')"><i class="fas fa-building"></i>Upcoming Companies</button>
+      <button class="nav-item" onclick="show('resume')"><i class="fas fa-file-pdf"></i>Resume</button>
+      <button class="nav-item" onclick="show('upload')"><i class="fas fa-file-excel"></i>Excel Upload</button>
+      <button class="nav-item" onclick="show('issue')"><i class="fas fa-bug"></i>Report Issue</button>
+      <button class="nav-item relative" onclick="show('notifications')"><i class="fas fa-bell"></i>Notifications <span id="nBadge" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center"></span></button>
+    </nav>
+  </div>
+  <div id="sidebarUser"></div>
+  <div class="px-4 py-3 border-t border-white/10">
+    <button onclick="toggleTheme()" class="nav-item"><i class="fas fa-adjust"></i>Toggle Theme</button>
+    <button onclick="logout()" class="nav-item" style="color:#fca5a5"><i class="fas fa-sign-out-alt"></i>Logout</button>
+  </div>
+</aside>
+<main class="main-content">
+  <header class="bg-white dark:bg-gray-800 shadow-sm px-5 py-3.5 flex items-center gap-3 sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
+    <button onclick="toggleSidebar()" class="md:hidden text-gray-500"><i class="fas fa-bars"></i></button>
+    <h2 id="ptitle" class="font-semibold text-gray-800 dark:text-white">Students</h2>
+  </header>
+  <div class="p-5">
+    <section id="s-students" class="fade-in">
+      <div class="flex flex-col sm:flex-row gap-3 mb-5">
+        <div class="relative flex-1"><i class="fas fa-search absolute left-3 top-3 text-gray-400 text-sm"></i><input type="text" placeholder="Search students..." class="form-input pl-9" oninput="srch(this.value)"/></div>
+        <button onclick="show('placements')" class="btn-primary whitespace-nowrap"><i class="fas fa-plus"></i> Add Placement</button>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>Reg No.</th><th>Name</th><th>Dept</th><th>CGPA</th><th>Batch</th><th>ID / Report</th></tr></thead>
+          <tbody id="stb"><tr><td colspan="6" class="text-center py-10 text-gray-400">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="s-placements" class="hidden fade-in">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="font-semibold dark:text-white">Placements</h3>
+        <button onclick="document.getElementById('pm').classList.remove('hidden')" class="btn-primary"><i class="fas fa-plus"></i> Add</button>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>Student</th><th>Company</th><th>Role</th><th>Package</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="ptb"><tr><td colspan="6" class="text-center py-10 text-gray-400">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="s-upload" class="hidden fade-in">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full mx-auto">
+        <h3 class="font-semibold dark:text-white mb-4">Bulk Upload Students</h3>
+        <div class="border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl p-8 text-center mb-4 cursor-pointer" onclick="document.getElementById('xf').click()">
+          <i class="fas fa-file-excel text-green-500 text-4xl mb-2"></i>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Click to select .xlsx file</p>
+          <p class="text-xs text-gray-400 mt-1">Columns: RegisterNo | FullName | Email | Department | BatchYear | Phone</p>
+          <input type="file" id="xf" accept=".xlsx,.xls" class="hidden" onchange="document.getElementById('xfn').textContent=this.files[0].name"/>
+        </div>
+        <p id="xfn" class="text-sm text-gray-500 mb-3"></p>
+        <div class="mb-4">
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">BATCH YEAR (Optional)</label>
+          <input type="number" id="xfBatchYear" class="form-input max-w-xs" placeholder="e.g., 2024"/>
+        </div>
+        <button onclick="doUpload()" class="btn-primary w-full justify-center"><i class="fas fa-upload"></i> Upload</button>
+        <div id="xr" class="mt-4 space-y-1 hidden max-h-56 overflow-y-auto"></div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-5 mt-6 w-full mx-auto shadow-sm border border-gray-100 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold dark:text-white">Upload History</h3>
+          <button onclick="loadUploadHistory()" class="btn-secondary btn-sm"><i class="fas fa-refresh"></i> Refresh</button>
+        </div>
+        <div id="uploadHistList">
+          <p class="text-gray-400 text-center py-6">No upload history</p>
+        </div>
+      </div>
+    </section>
+    
+    <section id="s-drives" class="hidden fade-in">
+      <div class="flex flex-col sm:flex-row gap-3 mb-5 justify-between">
+        <h3 class="font-semibold dark:text-white">Upcoming Placement Drives</h3>
+        <button onclick="openDriveModal()" class="btn-primary whitespace-nowrap"><i class="fas fa-plus"></i> Add Drive</button>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>Company</th><th>Role</th><th>Min CGPA</th><th>Deadline</th><th>Status</th><th>Applied</th><th>Actions</th></tr></thead>
+          <tbody id="drvBody"><tr><td colspan="7" class="text-center py-10 text-gray-400">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Resume Module (Qualification Form) -->
+    <section id="s-resume" class="hidden fade-in">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full mx-auto shadow-sm border border-gray-100 dark:border-gray-700">
+        <h3 class="font-semibold dark:text-white mb-5">Generate Bulk Resumes by Qualifications</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">SKILLS</label><input id="resGenSkills" class="form-input" placeholder="Java, React..."/></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">MIN CGPA</label><input id="resGenCgpa" type="number" step="0.1" class="form-input" placeholder="7.5"/></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">DEPARTMENT</label><input id="resGenDept" class="form-input" placeholder="CSE"/></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">BATCH YEAR</label><input id="resGenBatch" type="number" class="form-input" placeholder="2024"/></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">10th % MIN</label><input id="resGen10th" type="number" step="0.1" class="form-input" placeholder="80"/></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">12th % MIN</label><input id="resGen12th" type="number" step="0.1" class="form-input" placeholder="80"/></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">DOMAIN</label><input id="resGenDomain" class="form-input" placeholder="Software Engineering"/></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">MAX BACKLOGS</label><input id="resGenBacklogs" type="number" class="form-input" placeholder="0"/></div>
+          <div class="flex items-end"><button onclick="generateBulkResumes()" class="btn-primary w-full justify-center py-2"><i class="fas fa-file-pdf"></i> Generate Resumes</button></div>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-5 mt-6 w-full mx-auto shadow-sm border border-gray-100 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold dark:text-white">Generated Resumes History</h3>
+          <button onclick="loadResumeHistory()" class="btn-secondary btn-sm"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+        <div id="resumeHistoryList">
+          <p class="text-gray-400 text-center py-6">No history found</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="s-issue" class="hidden fade-in">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-5 w-full mx-auto shadow-sm border border-gray-100 dark:border-gray-700">
+        <h3 class="font-semibold dark:text-white mb-4">Report an Issue to Admin</h3>
+        <div class="space-y-3">
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">SUBJECT *</label><input id="is" class="form-input" placeholder="Brief subject"/></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">DESCRIPTION *</label><textarea id="id" class="form-input" rows="4" placeholder="Describe the issue..."></textarea></div>
+          <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">SEVERITY</label><select id="isv" class="form-input"><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option></select></div>
+          <button onclick="submitIssue()" class="btn-primary w-full justify-center"><i class="fas fa-paper-plane"></i> Submit</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Notifications -->
+    <section id="s-notifications" class="hidden fade-in">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold dark:text-white">Global Activity & Notifications</h3>
+          <button onclick="loadNotifications()" class="btn-secondary btn-sm"><i class="fas fa-refresh"></i> Refresh</button>
+        </div>
+        <div id="notifList" class="space-y-3">
+          <p class="text-gray-400 text-center py-6">Loading...</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Excel Edit Modal -->
+<div id="excelEditModal" class="modal-backdrop hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal p-6 dark:bg-gray-800 max-w-6xl w-full">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-semibold dark:text-white">Edit Excel Upload Data</h3>
+      <button onclick="document.getElementById('excelEditModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+    </div>
+    <p class="text-sm text-gray-500 mb-4">Update the data directly here. Click "Save All Changes" to sync to the database.</p>
+    <div class="table-wrapper max-h-[60vh] overflow-y-auto mb-4 border border-gray-100 dark:border-gray-700">
+      <table class="data-table">
+        <thead><tr><th>Reg No</th><th>Name</th><th>Email</th><th>Dept</th><th>CGPA</th><th>Batch</th><th>Status</th></tr></thead>
+        <tbody id="excelEditBody"></tbody>
+      </table>
+    </div>
+    <div class="flex justify-end gap-3">
+      <button onclick="saveExcelEdits()" class="btn-primary"><i class="fas fa-save"></i> Save All Changes</button>
+      <button onclick="document.getElementById('excelEditModal').classList.add('hidden')" class="btn-secondary">Cancel</button>
+    </div>
+  </div>
+</div>
+<div id="pm" class="modal-backdrop hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal p-6 dark:bg-gray-800">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-semibold dark:text-white">Add Placement</h3>
+      <button onclick="document.getElementById('pm').classList.add('hidden')" class="text-gray-400 text-xl">&times;</button>
+    </div>
+    <div class="space-y-3">
+      <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">STUDENT ID *</label><input id="ps" type="number" class="form-input" placeholder="Student ID"/></div>
+      <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">COMPANY *</label><input id="pc" class="form-input" placeholder="Company name"/></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ROLE</label><input id="pr" class="form-input" placeholder="Job role"/></div>
+        <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">PACKAGE (LPA)</label><input id="pp" type="number" step="0.1" class="form-input" placeholder="6.5"/></div>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button onclick="addPlac()" class="btn-primary flex-1 justify-center">Add</button>
+        <button onclick="document.getElementById('pm').classList.add('hidden')" class="btn-secondary flex-1 justify-center">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drive Modal -->
+<div id="driveModal" class="modal-backdrop hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal p-6 dark:bg-gray-800">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-semibold dark:text-white">Upcoming Company Drive</h3>
+      <button onclick="document.getElementById('driveModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+    </div>
+    <div class="space-y-3">
+      <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">COMPANY NAME *</label><input id="dCo" class="form-input" placeholder="TCS, Infosys..."/></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">JOB ROLE</label><input id="dRole" class="form-input" placeholder="Software Engineer"/></div>
+        <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">PACKAGE (LPA)</label><input id="dPkg" type="number" step="0.1" class="form-input" placeholder="6.5"/></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">MIN CGPA</label><input id="dCgpa" type="number" step="0.1" class="form-input"/></div>
+        <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">TARGET BATCH</label><input id="dBatch" type="number" class="form-input"/></div>
+      </div>
+      <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">REQUIRED SKILLS</label><input id="dSkills" class="form-input" placeholder="Java, React..."/></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">DRIVE DATE</label><input id="dDate" type="date" min="2000-01-01" max="2099-12-31" class="form-input"/></div>
+        <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">DEADLINE</label><input id="dDeadline" type="date" min="2000-01-01" max="2099-12-31" class="form-input"/></div>
+      </div>
+      <div class="flex gap-3 pt-3">
+        <button onclick="saveDrive()" class="btn-primary flex-1 justify-center">Save Drive</button>
+        <button onclick="document.getElementById('driveModal').classList.add('hidden')" class="btn-secondary flex-1 justify-center">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Placement History Modal -->
+<div id="placementHistoryModal" class="modal-backdrop hidden" style="z-index: 60;" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal p-6 dark:bg-gray-800 max-w-5xl w-full">
+    <div class="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+      <div>
+        <h3 class="font-semibold dark:text-white text-lg">Placement Performance History</h3>
+        <p id="phStudentName" class="text-sm text-gray-500 mt-1"></p>
+      </div>
+      <button onclick="document.getElementById('placementHistoryModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+    </div>
+    <div class="max-h-[65vh] overflow-y-auto pr-2 space-y-6" id="phContent">
+      <p class="text-center text-gray-400 py-6">Loading...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Round Modal -->
+<div id="roundModal" class="modal-backdrop hidden" style="z-index: 100;" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal p-6 dark:bg-gray-800 max-w-md w-full">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-semibold dark:text-white" id="roundModalTitle">Add Round</h3>
+      <button onclick="document.getElementById('roundModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+    </div>
+    <div class="space-y-3">
+      <input type="hidden" id="rId"/>
+      <input type="hidden" id="rPlacementId"/>
+      <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ROUND NAME *</label><input id="rName" class="form-input" placeholder="Aptitude, Technical, HR..."/></div>
+      <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">INTERVIEW DATE</label><input id="rDate" type="date" class="form-input"/></div>
+      <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">STATUS</label>
+        <select id="rStatus" class="form-input">
+          <option value="PENDING">Pending</option>
+          <option value="SELECTED">Selected</option>
+          <option value="REJECTED">Rejected</option>
+          <option value="SHORTLISTED">Shortlisted</option>
+          <option value="NOT_ATTENDED">Not Attended</option>
+        </select>
+      </div>
+      <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">FEEDBACK (Internal)</label><textarea id="rFeedback" class="form-input" rows="2"></textarea></div>
+      <div><label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">NOTES</label><textarea id="rNotes" class="form-input" rows="2"></textarea></div>
+      <div class="flex gap-3 pt-3">
+        <button onclick="saveRound()" class="btn-primary flex-1 justify-center">Save Round</button>
+        <button onclick="document.getElementById('roundModal').classList.add('hidden')" class="btn-secondary flex-1 justify-center">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/js/app.js"></script>
+<script>
+let allS = [];
+document.addEventListener('DOMContentLoaded', () => {
+    if (!checkAuth('STAFF')) return;
+    loadS();
+});
+function show(n) {
+    ['students','placements','drives','resume','upload','issue','notifications'].forEach(x => {
+        const el = document.getElementById('s-'+x);
+        if(el) el.classList.add('hidden');
+    });
+    const target = document.getElementById('s-'+n);
+    if(target) target.classList.remove('hidden');
+    document.getElementById('ptitle').textContent = n.charAt(0).toUpperCase()+n.slice(1).replace('Drives','Upcoming Companies').replace('Issue', 'Report Issue').replace('Notifications', 'Global Activity & Notifications');
+    if (n==='placements') loadP();
+    else if (n==='drives') loadDrives();
+    else if (n==='resume') loadResumeHistory();
+    else if (n==='notifications') { loadNotifications(); loadUnreadCount(); }
+}
+async function loadS() {
+    const d = await apiFetch('/student');
+    if (!d?.success) return;
+    allS = d.data; renderS(allS);
+}
+function renderS(list) {
+    const tb = document.getElementById('stb');
+    if (!list.length) { tb.innerHTML='<tr><td colspan="6" class="text-center py-10 text-gray-400">No students</td></tr>'; return; }
+    tb.innerHTML = list.map(s=>`
+        <tr>
+          <td class="font-mono text-xs text-blue-700 dark:text-blue-400 font-semibold">${s.registerNumber}</td>
+          <td><div class="font-medium dark:text-white text-sm">${s.fullName}</div><div class="text-xs text-gray-400">${s.email}</div></td>
+          <td class="text-sm text-gray-600 dark:text-gray-400">${s.department||'—'}</td>
+          <td><span class="font-semibold text-sm ${(s.cgpa||0)>=7?'text-green-600':'text-amber-600'}">${s.cgpa||'—'}</span></td>
+          <td class="text-sm">${s.batchYear||'—'}</td>
+          <td><div class="flex items-center gap-2"><span class="text-xs text-gray-400">ID:${s.id}</span><button onclick="downloadAuthFile('/api/reports/student/${s.id}/pdf', 'resume.pdf')" class="btn-secondary btn-sm"><i class="fas fa-file-pdf text-red-500"></i></button></div></td>
+        </tr>`).join('');
+}
+const srch = debounce(async q => {
+    if (!q.trim()) { renderS(allS); return; }
+    const d = await apiFetch('/student/search?q='+encodeURIComponent(q));
+    if (d?.success) renderS(d.data);
+}, 300);
+async function loadP() {
+    const d = await apiFetch('/placements');
+    if (!d?.success) return;
+    const tb = document.getElementById('ptb');
+    if (!d.data.length) { tb.innerHTML='<tr><td colspan="6" class="text-center py-10 text-gray-400">No placements</td></tr>'; return; }
+    tb.innerHTML = d.data.map(p=>`
+        <tr>
+          <td><div class="font-medium dark:text-white text-sm">${p.studentName}</div><div class="text-xs text-blue-500 cursor-pointer" onclick="viewPlacementHistory(${p.studentId}, '${p.studentName}', '${p.registerNumber}')">${p.registerNumber}</div></td>
+          <td class="font-medium text-sm dark:text-white">${p.companyName}</td>
+          <td class="text-sm text-gray-600 dark:text-gray-400">${p.jobRole||'—'}</td>
+          <td class="text-sm">${p.packageOffered?p.packageOffered+' LPA':'—'}</td>
+          <td><span class="badge badge-${(p.overallStatus||'').toLowerCase()}">${p.overallStatus}</span></td>
+          <td><button onclick="updStatus(${p.id})" class="btn-secondary btn-sm" title="Quick Status Update"><i class="fas fa-edit"></i></button></td>
+        </tr>`).join('');
+}
+async function addPlac() {
+    const body={studentId:parseInt(document.getElementById('ps').value),companyName:document.getElementById('pc').value.trim(),jobRole:document.getElementById('pr').value.trim(),packageOffered:parseFloat(document.getElementById('pp').value)||null};
+    if (!body.studentId||!body.companyName){showToast('Student ID and Company required','error');return;}
+    const d=await apiFetch('/placements',{method:'POST',headers:authHeaders(),body:JSON.stringify(body)});
+    if(d?.success){showToast('Placement added!','success');document.getElementById('pm').classList.add('hidden');loadP();}
+    else showToast(d?.message||'Failed','error');
+}
+async function updStatus(id) {
+    const s = prompt('Enter status:\nPENDING | PASSED | FAILED | SELECTED');
+    if (!s) return;
+    const d = await apiFetch('/placements/'+id,{method:'PUT',headers:authHeaders(),body:JSON.stringify({overallStatus:s.toUpperCase().trim(),companyName:'x'})});
+    if(d?.success){showToast('Updated','success');loadP();}
+}
+
+// Placement tracking logic
+let currentHistoryStudentId = null;
+async function viewPlacementHistory(studentId, sName, sReg) {
+    currentHistoryStudentId = studentId;
+    document.getElementById('phStudentName').textContent = sName + ' (' + sReg + ')';
+    document.getElementById('placementHistoryModal').classList.remove('hidden');
+    document.getElementById('phContent').innerHTML = '<p class="text-center text-gray-400 py-6">Loading...</p>';
+    
+    const res = await apiFetch('/placements/history/student/' + studentId);
+    if (!res?.success) {
+        document.getElementById('phContent').innerHTML = '<p class="text-red-500 text-center">Failed to load history</p>';
+        return;
+    }
+    
+    const { placements, logs } = res.data;
+    let html = '';
+    
+    if (!placements || placements.length === 0) {
+        html += '<p class="text-gray-500 dark:text-gray-400 text-center py-6">No placement records found.</p>';
+    } else {
+        for (const p of placements) {
+            const roundsRes = await apiFetch('/placements/' + p.id + '/rounds');
+            const rounds = roundsRes?.success ? roundsRes.data : [];
+            
+            html += `
+            <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-5 border border-gray-100 dark:border-gray-700">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-bold text-lg dark:text-white">${p.companyName}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">${p.jobRole || 'N/A'} • ${p.packageOffered ? p.packageOffered + ' LPA' : 'N/A'} • <span class="badge badge-${(p.overallStatus||'').toLowerCase()}">${p.overallStatus}</span></p>
+                    </div>
+                    <button onclick="openRoundModal(${p.id})" class="btn-primary btn-sm"><i class="fas fa-plus"></i> Add Round</button>
+                </div>
+                <div class="mt-4">
+                    <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Rounds</h5>
+                    ${rounds.length === 0 ? '<p class="text-sm text-gray-400">No rounds tracked yet.</p>' : `
+                    <div class="space-y-2">
+                        ${rounds.map(r => `
+                        <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium text-sm dark:text-white">${r.roundName}</span>
+                                    <span class="badge badge-${(r.status||'').toLowerCase()}">${r.status}</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    ${r.interviewDate ? 'Date: ' + r.interviewDate : ''} 
+                                    ${r.notes ? '• Notes: ' + r.notes : ''} 
+                                    ${r.feedback ? '• Feedback: ' + r.feedback : ''}
+                                </div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="editRound(${r.id}, ${p.id}, '${r.roundName}', '${r.interviewDate||''}', '${r.status}', '${(r.feedback||'').replace(/'/g, "\\'")}', '${(r.notes||'').replace(/'/g, "\\'")}')" class="btn-secondary btn-sm"><i class="fas fa-edit text-blue-500"></i></button>
+                                <button onclick="deleteRoundStatus(${r.id})" class="btn-secondary btn-sm"><i class="fas fa-trash text-red-400"></i></button>
+                            </div>
+                        </div>
+                        `).join('')}
+                    </div>
+                    `}
+                </div>
+            </div>`;
+        }
+    }
+    
+    html += '<h4 class="font-bold text-gray-700 dark:text-gray-300 mt-6 mb-3 border-t border-gray-200 dark:border-gray-700 pt-4">Action History</h4>';
+    if (!logs || logs.length === 0) {
+        html += '<p class="text-sm text-gray-500">No action history recorded.</p>';
+    } else {
+        html += '<ul class="space-y-2 text-sm">';
+        logs.forEach(log => {
+            const time = new Date(log.timestamp).toLocaleString('en-IN');
+            html += `<li class="flex gap-2 items-start"><i class="fas fa-history text-gray-400 mt-1"></i><div class="flex-1"><span class="font-medium text-gray-700 dark:text-gray-300">[${time}] ${log.actionType} ${log.entityType}:</span> <span class="text-gray-600 dark:text-gray-400">${log.details}</span> <span class="text-xs text-gray-400 ml-1">by ${log.performedBy}</span></div></li>`;
+        });
+        html += '</ul>';
+    }
+    
+    document.getElementById('phContent').innerHTML = html;
+}
+
+function openRoundModal(placementId) {
+    document.getElementById('roundModalTitle').textContent = 'Add Round';
+    document.getElementById('rId').value = '';
+    document.getElementById('rPlacementId').value = placementId;
+    ['rName', 'rDate', 'rFeedback', 'rNotes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('rStatus').value = 'PENDING';
+    document.getElementById('roundModal').classList.remove('hidden');
+}
+
+function editRound(id, pId, name, date, status, feedback, notes) {
+    document.getElementById('roundModalTitle').textContent = 'Edit Round';
+    document.getElementById('rId').value = id;
+    document.getElementById('rPlacementId').value = pId;
+    document.getElementById('rName').value = name;
+    document.getElementById('rDate').value = date;
+    document.getElementById('rStatus').value = status;
+    document.getElementById('rFeedback').value = feedback;
+    document.getElementById('rNotes').value = notes;
+    document.getElementById('roundModal').classList.remove('hidden');
+}
+
+async function saveRound() {
+    const rId = document.getElementById('rId').value;
+    const pId = document.getElementById('rPlacementId').value;
+    const body = {
+        roundName: document.getElementById('rName').value.trim(),
+        interviewDate: document.getElementById('rDate').value || null,
+        status: document.getElementById('rStatus').value,
+        feedback: document.getElementById('rFeedback').value.trim(),
+        notes: document.getElementById('rNotes').value.trim()
+    };
+    if (!body.roundName) return showToast('Round name is required', 'error');
+    
+    let res;
+    if (rId) {
+        res = await apiFetch('/placements/rounds/' + rId, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
+    } else {
+        res = await apiFetch('/placements/' + pId + '/rounds', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    }
+    
+    if (res?.success) {
+        showToast('Round saved successfully', 'success');
+        document.getElementById('roundModal').classList.add('hidden');
+        if (currentHistoryStudentId) {
+            const name = document.getElementById('phStudentName').textContent.split(' (')[0];
+            const reg = document.getElementById('phStudentName').textContent.split(' (')[1].replace(')', '');
+            viewPlacementHistory(currentHistoryStudentId, name, reg);
+        }
+    } else {
+        showToast(res?.message || 'Failed to save round', 'error');
+    }
+}
+
+async function deleteRoundStatus(id) {
+    if (!confirm('Delete this round?')) return;
+    const res = await apiFetch('/placements/rounds/' + id, { method: 'DELETE', headers: authHeaders() });
+    if (res?.success) {
+        showToast('Round deleted', 'success');
+        if (currentHistoryStudentId) {
+            const name = document.getElementById('phStudentName').textContent.split(' (')[0];
+            const reg = document.getElementById('phStudentName').textContent.split(' (')[1].replace(')', '');
+            viewPlacementHistory(currentHistoryStudentId, name, reg);
+        }
+    } else {
+        showToast(res?.message || 'Failed to delete round', 'error');
+    }
+}
+async function doUpload() {
+    const f=document.getElementById('xf').files[0];
+    const batchYearInput = document.getElementById('xfBatchYear');
+    if(!f){showToast('Select a file','error');return;}
+    const fd=new FormData();fd.append('file',f);
+    if(batchYearInput && batchYearInput.value) fd.append('batchYear', batchYearInput.value);
+    const res=await fetch('/api/staff/upload-students',{method:'POST',headers:{'Authorization':'Bearer '+getToken()},body:fd});
+    const d=await res.json();
+    const div=document.getElementById('xr');div.classList.remove('hidden');
+    div.innerHTML=(d.data?.results||d.data||[]).map(r=>`<p class="text-xs ${r.includes('successfully')?'text-green-600':'text-red-500'}">${r}</p>`).join('');
+    showToast('Upload done','success');
+}
+
+function openDriveModal() {
+    ['dCo','dRole','dPkg','dCgpa','dBatch','dSkills','dDate','dDeadline'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('driveModal').classList.remove('hidden');
+}
+
+async function loadDrives() {
+    const data = await apiFetch('/placement-drives');
+    if (!data?.success) return;
+    const tbody = document.getElementById('drvBody');
+    if (!data.data.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-gray-400">No upcoming drives</td></tr>'; return; }
+    tbody.innerHTML = data.data.map(d => `
+        <tr>
+          <td class="font-medium dark:text-white text-sm">${d.companyName}</td>
+          <td class="text-sm">${d.jobRole || '—'}</td>
+          <td class="text-sm">${d.minCgpa || '—'}</td>
+          <td class="text-sm text-red-500">${d.applicationDeadline || '—'}</td>
+          <td><span class="badge ${d.status==='ONGOING'?'badge-selected':'badge-failed'}">${d.status}</span></td>
+          <td class="text-sm cursor-pointer hover:text-blue-500" title="View Applied">${d.studentsAppliedCount || 0} applications</td>
+          <td>
+            <div class="flex gap-1">
+              <button onclick="deleteDrive(${d.id})" class="btn-secondary btn-sm"><i class="fas fa-trash text-red-400"></i></button>
+            </div>
+          </td>
+        </tr>`).join('');
+}
+
+async function saveDrive() {
+    const driveDate = document.getElementById('dDate').value;
+    const deadline = document.getElementById('dDeadline').value;
+    const body = {
+        companyName: document.getElementById('dCo').value.trim(),
+        jobRole: document.getElementById('dRole').value.trim(),
+        packageOffered: parseFloat(document.getElementById('dPkg').value) || null,
+        minCgpa: parseFloat(document.getElementById('dCgpa').value) || null,
+        batch: parseInt(document.getElementById('dBatch').value) || null,
+        skills: document.getElementById('dSkills').value.trim(),
+        driveDate: driveDate ? new Date(driveDate).toISOString().split('T')[0] : null,
+        applicationDeadline: deadline ? new Date(deadline).toISOString().split('T')[0] : null
+    };
+    if (!body.companyName) return showToast('Company name is required', 'error');
+    const res = await apiFetch('/placement-drives', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
+    if(res?.success) {
+        showToast('Drive created', 'success');
+        document.getElementById('driveModal').classList.add('hidden');
+        loadDrives();
+    } else showToast(res?.message || 'Failed', 'error');
+}
+
+async function deleteDrive(id) {
+    if (!confirm('Delete this drive?')) return;
+    const res = await apiFetch('/placement-drives/' + id, { method:'DELETE', headers:authHeaders() });
+    if (res?.success) loadDrives(); else showToast(res?.message || 'Failed', 'error');
+}
+
+async function generateBulkResumes() {
+    const body = {};
+    const s = document.getElementById('resGenSkills').value.trim(); if(s) body.skills = s;
+    const cg = document.getElementById('resGenCgpa').value; if(cg) body.cgpa = parseFloat(cg);
+    const m10 = document.getElementById('resGen10th').value; if(m10) body.tenthPercent = parseFloat(m10);
+    const m12 = document.getElementById('resGen12th').value; if(m12) body.twelfthPercent = parseFloat(m12);
+    const dp = document.getElementById('resGenDept').value.trim(); if(dp) body.departments = [dp];
+    const bt = document.getElementById('resGenBatch').value; if(bt) body.batchYears = [parseInt(bt)];
+    const dm = document.getElementById('resGenDomain').value.trim(); if(dm) body.domain = dm;
+    const cb = document.getElementById('resGenBacklogs'); if(cb && cb.value) body.currentBacklogs = parseInt(cb.value);
+
+    // First preview matched count
+    const previewRes = await apiFetch('/reports/preview-bulk', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
+    if (!previewRes?.success) {
+        showToast('Failed to check matched count', 'error');
+        return;
+    }
+    
+    const count = previewRes.data;
+    if (count === 0) {
+        showToast('No students matched exactly with the selected criteria', 'info');
+        return;
+    }
+    
+    if (!confirm(`Matched ${count} student(s). Do you want to generate resumes for them?`)) {
+        return;
+    }
+
+    showToast('Generating resumes... Please wait', 'info');
+    const res = await apiFetch('/reports/bulk-resumes', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
+    if(res?.success) {
+        showToast('Resumes generated successfully', 'success');
+        loadResumeHistory();
+    } else { 
+        showToast(res?.message || 'Failed to generate resumes', 'error'); 
+    }
+}
+
+async function loadResumeHistory() {
+    const data = await apiFetch('/staff/resume-history');
+    const div = document.getElementById('resumeHistoryList');
+    if (!data?.success || !data.data || !data.data.length) {
+        div.innerHTML = '<p class="text-gray-400 text-center py-6">No history found</p>';
+        return;
+    }
+    div.innerHTML = `<div class="table-wrapper"><table class="data-table">
+      <thead><tr><th>File</th><th>Generated By</th><th>Date</th><th>Expires</th><th>Action</th></tr></thead>
+      <tbody>${data.data.map(h => `
+        <tr>
+          <td class="font-medium dark:text-white">${h.fileName}</td>
+          <td class="text-sm text-gray-500">${h.generatedBy || '—'}</td>
+          <td class="text-xs text-gray-400">${new Date(h.createdAt).toLocaleString('en-IN')}</td>
+          <td class="text-xs text-red-400">${new Date(h.expirationDate).toLocaleString('en-IN')}</td>
+          <td><button onclick="downloadAuthFile('/api/reports/download-bulk/${h.id}', '${h.fileName}')" class="btn-primary btn-sm"><i class="fas fa-download"></i> Download</button></td>
+        </tr>`).join('')}
+      </tbody></table></div>`;
+}
+
+async function submitIssue() {
+    const s=document.getElementById('is').value.trim();
+    const desc=document.getElementById('id').value.trim();
+    if (!s||!desc){showToast('Fill all fields','error');return;}
+    try {
+        const res=await fetch('/api/reports',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':'Bearer '+getToken()},
+            body:JSON.stringify({subject:s,message:desc,severity:document.getElementById('isv').value})
+        });
+        const d=await res.json();
+        if(d?.success){showToast('Issue reported!','success');document.getElementById('is').value='';document.getElementById('id').value='';}
+        else showToast(d?.message||'Failed to submit','error');
+    } catch(e) {
+        showToast('Network error','error');
+    }
+}
+
+// Notifications Logic
+async function loadUnreadCount() {
+    try {
+        const d = await apiFetch('/staff/notifications/unread-count');
+        const badge = document.getElementById('nBadge');
+        if (d?.success && d.data > 0) {
+            badge.textContent = d.data > 99 ? '99+' : d.data;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    } catch(e) {}
+}
+
+async function loadNotifications() {
+    const d = await apiFetch('/staff/notifications');
+    const div = document.getElementById('notifList');
+    if (!d?.success || !d.data || d.data.length === 0) {
+        div.innerHTML = '<p class="text-gray-400 text-center py-8">No notifications found.</p>';
+        return;
+    }
+    
+    div.innerHTML = d.data.map(n => `
+      <div class="p-4 rounded-xl border ${n.readStatus ? 'bg-gray-50 border-gray-100 dark:bg-gray-800 dark:border-gray-700' : 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800'} transition-all">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="font-medium text-sm dark:text-white">${n.message || 'Notification'}</p>
+            <div class="flex gap-3 items-center mt-2 text-xs text-gray-500">
+              <span class="bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full"><i class="fas fa-user-tag text-[10px] mr-1"></i>${n.role || 'System'}</span>
+              ${n.createdBy ? `<span class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full"><i class="fas fa-user text-[10px] mr-1"></i>${n.createdBy}</span>` : ''}
+              ${n.actionType ? `<span class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full"><i class="fas fa-tag text-[10px] mr-1"></i>${n.actionType}</span>` : ''}
+              <span class="flex items-center gap-1"><i class="far fa-clock"></i>${new Date(n.time).toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    
+    // Auto-mark as read when opened
+    await apiFetch('/staff/notifications/read-all', { method: 'PATCH', headers: authHeaders() });
+    loadUnreadCount();
+}
+
+// Initial load
+loadUnreadCount();
+setInterval(loadUnreadCount, 30000); // Check every 30s
+loadUploadHistory();
+
+async function loadUploadHistory() {
+    const data = await apiFetch('/staff/upload-history');
+    if (!data?.success) return;
+    const div = document.getElementById('uploadHistList');
+    if (!data.data.length) { div.innerHTML = '<p class="text-gray-400 text-center py-6">No upload history</p>'; return; }
+    div.innerHTML = `<div class="table-wrapper"><table class="data-table">
+      <thead><tr><th>File</th><th>Date</th><th>Total</th><th>New</th><th>Updated</th><th>Failed</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>${data.data.map(h=>`
+        <tr>
+          <td class="font-medium dark:text-white">${h.fileName}</td>
+          <td class="text-xs text-gray-400">${h.uploadDate?new Date(h.uploadDate).toLocaleString('en-IN'):''}</td>
+          <td>${h.totalRecords}</td>
+          <td class="text-green-600">${h.successCount}</td>
+          <td class="text-blue-600">${h.updateCount}</td>
+          <td class="text-red-600">${h.failedCount}</td>
+          <td><span class="badge ${h.status==='SUCCESS'?'badge-selected':h.status==='PARTIAL'?'badge-pending':'badge-failed'}">${h.status}</span></td>
+          <td>
+            <button onclick="editUpload(${h.id})" class="btn-secondary btn-sm" title="Edit Data"><i class="fas fa-edit text-blue-500"></i></button>
+          </td>
+        </tr>`).join('')}
+      </tbody></table></div>`;
+}
+
+let currentUploadStudents = [];
+async function editUpload(id) {
+    const data = await apiFetch('/student/upload/' + id);
+    if (!data?.success) return showToast('Failed to load students for this upload', 'error');
+    currentUploadStudents = data.data;
+    if (!currentUploadStudents.length) return showToast('No students found for this upload', 'error');
+    
+    const tbody = document.getElementById('excelEditBody');
+    tbody.innerHTML = currentUploadStudents.map(s => `
+        <tr data-id="${s.id}">
+          <td class="font-medium text-sm dark:text-white">${s.registerNumber}</td>
+          <td><input type="text" class="form-input text-sm p-1" value="${s.fullName || ''}" data-field="fullName"/></td>
+          <td><input type="email" class="form-input text-sm p-1" value="${s.email || ''}" data-field="email"/></td>
+          <td><input type="text" class="form-input text-sm p-1" value="${s.department || ''}" data-field="department"/></td>
+          <td><input type="number" step="0.1" class="form-input text-sm p-1 w-20" value="${s.cgpa || ''}" data-field="cgpa"/></td>
+          <td><input type="number" class="form-input text-sm p-1 w-20" value="${s.batchYear || ''}" data-field="batchYear"/></td>
+          <td>
+            <select class="form-input text-sm p-1 w-28" data-field="placementStatus">
+              <option value="" ${!s.placementStatus?'selected':''}>N/A</option>
+              <option value="SELECTED" ${s.placementStatus==='SELECTED'?'selected':''}>Selected</option>
+              <option value="PENDING" ${s.placementStatus==='PENDING'?'selected':''}>Pending</option>
+              <option value="NOT_ATTENDED" ${s.placementStatus==='NOT_ATTENDED'?'selected':''}>Not Attended</option>
+            </select>
+          </td>
+        </tr>
+    `).join('');
+    document.getElementById('excelEditModal').classList.remove('hidden');
+}
+
+async function saveExcelEdits() {
+    const rows = document.querySelectorAll('#excelEditBody tr');
+    const btn = document.querySelector('#excelEditModal .btn-primary');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    btn.disabled = true;
+
+    let successCount = 0, failCount = 0;
+
+    for (const row of rows) {
+        const id = row.getAttribute('data-id');
+        if (!id) { failCount++; continue; }
+
+        const cgpaVal = row.querySelector('[data-field="cgpa"]').value;
+        const batchVal = row.querySelector('[data-field="batchYear"]').value;
+        const body = {
+            fullName: row.querySelector('[data-field="fullName"]').value.trim(),
+            email: row.querySelector('[data-field="email"]').value.trim(),
+            department: row.querySelector('[data-field="department"]').value.trim(),
+            cgpa: cgpaVal ? parseFloat(cgpaVal) : null,
+            batchYear: batchVal ? parseInt(batchVal) : null,
+            placementStatus: row.querySelector('[data-field="placementStatus"]').value || null
+        };
+
+        try {
+            const res = await apiFetch('/student/' + id, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
+            if (res?.success) {
+                successCount++;
+                row.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+            } else {
+                failCount++;
+                row.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+            }
+        } catch (e) {
+            failCount++;
+            row.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+        }
+    }
+    
+    btn.innerHTML = '<i class="fas fa-save"></i> Save All Changes';
+    btn.disabled = false;
+
+    if (failCount === 0) {
+        showToast(`All ${successCount} students updated successfully`, 'success');
+        document.getElementById('excelEditModal').classList.add('hidden');
+    } else {
+        showToast(`Updated ${successCount}, failed ${failCount}.`, failCount > 0 && successCount > 0 ? 'info' : 'error');
+    }
+}
+</script>
+</body>
+</html>
