@@ -55,6 +55,11 @@ public class PlacementDriveService {
 
     @Transactional
     public void deleteDrive(Long id) {
+        List<com.gradhire.entity.Placement> placements = placementRepository.findByDriveId(id);
+        for(com.gradhire.entity.Placement p : placements) {
+            p.setDrive(null);
+            placementRepository.save(p);
+        }
         placementDriveRepository.deleteById(id);
     }
 }

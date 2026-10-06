@@ -79,25 +79,25 @@ public class AdminController {
     }
 
     @GetMapping("/notifications")
-    public ResponseEntity<ApiResponse<java.util.List<com.gradhire.entity.Notification>>> getNotifications() {
+    public ResponseEntity<ApiResponse<java.util.List<com.gradhire.entity.Notification>>> getNotifications(Authentication auth) {
         return ResponseEntity.ok(ApiResponse.success("Notifications retrieved",
-                notificationService.getAllNotifications()));
+                notificationService.getGlobalAndUserNotifications(auth.getName())));
     }
 
     @GetMapping("/notifications/unread-count")
-    public ResponseEntity<ApiResponse<Long>> getUnreadCount() {
-        return ResponseEntity.ok(ApiResponse.success("Unread count", notificationService.getUnreadCount()));
+    public ResponseEntity<ApiResponse<Long>> getUnreadCount(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.success("Unread count", notificationService.getUnreadCount(auth.getName())));
     }
 
     @PatchMapping("/notifications/{id}/read")
-    public ResponseEntity<ApiResponse<Void>> markRead(@PathVariable Long id) {
-        notificationService.markAsRead(id);
+    public ResponseEntity<ApiResponse<Void>> markRead(@PathVariable Long id, Authentication auth) {
+        notificationService.markAsRead(id, auth.getName());
         return ResponseEntity.ok(ApiResponse.success("Marked as read", null));
     }
 
     @PatchMapping("/notifications/read-all")
-    public ResponseEntity<ApiResponse<Void>> markAllRead() {
-        notificationService.markAllAsRead();
+    public ResponseEntity<ApiResponse<Void>> markAllRead(Authentication auth) {
+        notificationService.markAllAsRead(auth.getName());
         return ResponseEntity.ok(ApiResponse.success("All marked as read", null));
     }
 

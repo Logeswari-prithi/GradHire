@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Student Portal - GradHire</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={darkMode:'class'}</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -13,8 +14,7 @@
 <aside class="sidebar">
   <div class="px-4 py-6">
     <div class="flex items-center gap-3 mb-8">
-      <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-graduation-cap text-white"></i></div>
-      <div><h1 class="text-white font-bold text-lg">GradHire</h1><p class="text-blue-300 text-xs">Student Portal</p></div>
+      <img src="/images/logo.png" alt="GradHire Logo" class="h-12 w-auto object-contain">
     </div>
     <nav class="space-y-0.5">
       <button class="nav-item active" onclick="show('profile')"><i class="fas fa-user"></i>My Profile</button>
@@ -296,7 +296,7 @@ async function loadPlacements() {
     </div>
     <div class="table-wrapper"><table class="data-table">
         <thead><tr><th>Company</th><th>Role</th><th>Package</th><th>Applied</th><th>Status</th></tr></thead>
-        <tbody>${d.data.map(p=>`<tr>
+        <tbody>${d.data.map(p=>`<tr ondblclick='viewPlacementFullDetail(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
             <td class="font-medium dark:text-white text-sm">${p.companyName}</td>
             <td class="text-sm text-gray-600 dark:text-gray-400">${p.jobRole||'—'}</td>
             <td class="text-sm">${p.packageOffered?p.packageOffered+' LPA':'—'}</td>
@@ -366,7 +366,7 @@ async function loadDrives() {
     if (!d || !d.success || !d.data || !d.data.length) { div.innerHTML='<p class="text-gray-400 text-center py-8">No upcoming drives</p>'; return; }
     div.innerHTML = `<div class="table-wrapper"><table class="data-table">
         <thead><tr><th>Company</th><th>Role</th><th>Min CGPA</th><th>Deadline</th><th>Action</th></tr></thead>
-        <tbody>${d.data.map(p=>`<tr>
+        <tbody>${d.data.map(p=>`<tr onclick='viewDriveFullDetail(${JSON.stringify(p).replace(/'/g, "&#39;")}, "STUDENT")' ondblclick='viewDriveFullDetail(${JSON.stringify(p).replace(/'/g, "&#39;")}, "STUDENT")' class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
             <td class="font-medium dark:text-white text-sm">${p.companyName}</td>
             <td class="text-sm text-gray-600 dark:text-gray-400">${p.jobRole||'—'}</td>
             <td class="text-sm">${p.minCgpa||'—'}</td>

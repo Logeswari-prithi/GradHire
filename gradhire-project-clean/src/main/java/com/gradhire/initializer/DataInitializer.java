@@ -23,16 +23,14 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void createDefaultAdmin() {
-        if (!userRepository.existsByUsername("Admin")) {
-            User admin = new User();
-            admin.setUsername("Admin");
-            admin.setEmail("admin@gradhire.com");
-            admin.setPassword(passwordEncoder.encode("Admin@12345"));
-            admin.setRole(Role.ADMIN);
-            admin.setFullName("Admin");
-            admin.setEnabled(true);
-            userRepository.save(admin);
-        }
+        User admin = userRepository.findByUsername("Admin").orElse(new User());
+        admin.setUsername("Admin");
+        admin.setEmail("admin@gradhire.com");
+        admin.setPassword(passwordEncoder.encode("Admin@12345"));
+        admin.setRole(Role.ADMIN);
+        admin.setFullName("Admin");
+        admin.setEnabled(true);
+        userRepository.save(admin);
     }
 
     private void createDefaultBatches() {

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Admin Dashboard - GradHire</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={darkMode:'class'}</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -15,10 +16,7 @@
 <aside class="sidebar" id="sidebar">
   <div class="px-4 py-6">
     <div class="flex items-center gap-3 mb-8">
-      <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-        <i class="fas fa-graduation-cap text-white"></i>
-      </div>
-      <div><h1 class="text-white font-bold text-lg leading-tight">GradHire</h1><p class="text-blue-300 text-xs">Admin Portal</p></div>
+      <img src="/images/logo.png" alt="GradHire Logo" class="h-12 w-auto object-contain">
     </div>
     <nav class="space-y-0.5">
       <button class="nav-item active" onclick="showSection('dashboard')"><i class="fas fa-tachometer-alt"></i>Dashboard</button>
@@ -61,15 +59,16 @@
     <!-- Dashboard -->
     <section id="section-dashboard" class="fade-in">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="stat-card"><div class="flex justify-between items-start"><div><p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Students</p><p class="text-2xl font-bold dark:text-white" id="s1">—</p></div><div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center"><i class="fas fa-user-graduate text-blue-600"></i></div></div></div>
+        <div class="stat-card cursor-pointer hover:shadow-md transition" onclick="showSection('students')"><div class="flex justify-between items-start"><div><p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Students</p><p class="text-2xl font-bold dark:text-white" id="s1">—</p></div><div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center"><i class="fas fa-user-graduate text-blue-600"></i></div></div></div>
         <div class="stat-card cursor-pointer hover:shadow-md transition" onclick="showSection('placements')"><div class="flex justify-between items-start"><div><p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Companies</p><p class="text-2xl font-bold dark:text-white" id="s2">—</p></div><div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center"><i class="fas fa-building text-purple-600"></i></div></div></div>
-        <div class="stat-card"><div class="flex justify-between items-start"><div><p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Selected</p><p class="text-2xl font-bold text-green-600" id="s3">—</p></div><div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center"><i class="fas fa-check-circle text-green-600"></i></div></div></div>
+        <div class="stat-card cursor-pointer hover:shadow-md transition" onclick="showSection('placements')"><div class="flex justify-between items-start"><div><p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Selected</p><p class="text-2xl font-bold text-green-600" id="s3">—</p></div><div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center"><i class="fas fa-check-circle text-green-600"></i></div></div></div>
         <div class="stat-card"><div class="flex justify-between items-start"><div><p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Placement %</p><p class="text-2xl font-bold text-purple-600" id="s4">—</p></div><div class="w-10 h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center"><i class="fas fa-percent text-pink-600"></i></div></div></div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div class="stat-card"><h3 class="font-semibold dark:text-white mb-4 text-sm">Placement Status</h3><canvas id="statusChart" height="200"></canvas></div>
         <div class="stat-card"><h3 class="font-semibold dark:text-white mb-4 text-sm">Batch-wise Students</h3><canvas id="batchChart" height="200"></canvas></div>
         <div class="stat-card lg:col-span-2"><h3 class="font-semibold dark:text-white mb-4 text-sm">Department Distribution</h3><canvas id="deptChart" height="100"></canvas></div>
+        <div class="stat-card lg:col-span-2"><h3 class="font-semibold dark:text-white mb-4 text-sm">Year-wise Trends</h3><div class="grid grid-cols-1 lg:grid-cols-2 gap-4"><div><p class="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">Selection Rate (%)</p><canvas id="trendSelectionChart" height="160"></canvas></div><div><p class="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">Average CGPA</p><canvas id="trendCgpaChart" height="160"></canvas></div></div></div>
       </div>
     </section>
 
@@ -523,6 +522,35 @@
         <button onclick="saveRound()" class="btn-primary flex-1 justify-center">Save Round</button>
         <button onclick="document.getElementById('roundModal').classList.add('hidden')" class="btn-secondary flex-1 justify-center">Cancel</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student Detail View Modal -->
+<div id="studentDetailModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeStudentDetail()">
+  <div class="modal p-0 dark:bg-gray-800 max-w-3xl w-full" style="max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">
+    <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <div id="sdAvatar" class="w-11 h-11 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0"></div>
+        <div>
+          <h3 id="sdTitle" class="font-semibold dark:text-white text-lg">Student Details</h3>
+          <p id="sdSubtitle" class="text-xs text-gray-500"></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="sdEditBtn" onclick="toggleStudentEdit()" class="btn-secondary btn-sm" title="Edit"><i class="fas fa-edit text-blue-500"></i> Edit</button>
+        <button onclick="closeStudentDetail()" class="text-gray-400 hover:text-gray-600 text-xl leading-none px-2">&times;</button>
+      </div>
+    </div>
+    <div id="sdViewContent" class="overflow-y-auto flex-1 px-6 py-5" style="max-height:calc(90vh - 70px);">
+      <!-- View mode content injected by JS -->
+    </div>
+    <div id="sdEditContent" class="overflow-y-auto flex-1 px-6 py-5 hidden" style="max-height:calc(90vh - 130px);">
+      <!-- Edit mode content injected by JS -->
+    </div>
+    <div id="sdEditActions" class="hidden flex-shrink-0 px-6 py-3 border-t border-gray-100 dark:border-gray-700 flex gap-3">
+      <button onclick="saveStudentDetail()" class="btn-primary flex-1 justify-center"><i class="fas fa-save"></i> Save Changes</button>
+      <button onclick="cancelStudentEdit()" class="btn-secondary flex-1 justify-center">Cancel</button>
     </div>
   </div>
 </div>

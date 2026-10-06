@@ -31,7 +31,15 @@ public class AuthService {
         // STEP 2: CHECK PASSWORD USING BCRYPT
         log.debug("Login attempt for user: {}", username);
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new BadRequestException("Invalid password");
+            // Fallback for plain-text passwords
+            if (password.equals(user.getPassword())) {
+                // Password is correct but stored as plain text. Re-encode and save.
+                log.info("Migrating plain text password to BCrypt for user: {}", username);
+                user.setPassword(passwordEncoder.encode(password));
+                userRepository.save(user);
+            } else {
+                throw new BadRequestException("Invalid password");
+            }
         }
 
         // STEP 3: CHECK ROLE

@@ -44,27 +44,53 @@ async function loadDashboard() {
     document.getElementById('s3').textContent = a.selectedCount || 0;
     document.getElementById('s4').textContent = (a.placementPercentage || 0).toFixed(1) + '%';
 
-    const statusData = a.statusWiseCount || {};
-    
-    const batchData = a.batchWiseCount || {};
+    // 1. Placement Status
+    const studentStatus = a.studentPlacementStatusCount || {};
+    const statusColors = { 
+        'Selected': '#10b981', 
+        'Rejected': '#dc2626', 
+        'Applied': '#3b82f6', 
+        'Waiting': '#f59e0b', 
+        'Pending': '#fcd34d', 
+        'Unselected': '#94a3b8' 
+    };
+    const statusLabels = Object.keys(studentStatus).filter(k => k && k !== 'null' && k !== 'undefined' && studentStatus[k] > 0);
+    if (statusLabels.length > 0) {
+        const statusVals = statusLabels.map(k => studentStatus[k]);
+        const statusCols = statusLabels.map(k => statusColors[k] || '#6b7280');
+        makeChart('statusChart', 'doughnut', null, statusCols, statusLabels, [{ data: statusVals, backgroundColor: statusCols, borderWidth: 2, borderColor: '#fff' }]);
+    } else clearChart('statusChart');
 
-    const deptData = a.departmentWiseCount || {};
-
-    if (Object.keys(statusData).length > 0) makeChart('statusChart', 'doughnut', statusData, ['#10b981','#3b82f6','#ef4444','#f59e0b','#8b5cf6','#06b6d4']);
-    else clearChart('statusChart');
-
-    if (Object.keys(batchData).length > 0) {
-        const vals = Object.values(batchData);
-        const maxVal = Math.max(...vals);
-        const getCode = (v) => v === maxVal ? '#10b981' : '#3b82f6';
-        makeChart('batchChart', 'bar', batchData, vals.map(getCode));
+    // 2. Batch-wise Students — stacked bar showing Total vs Selected per year
+    const batchTotal = a.batchWiseTotalCount || {};
+    const batchSelected = a.batchWiseCount || {};
+    const batchDetailed = a.batchWiseDetailedCount || {};
+    const batchLabels = Object.keys(batchTotal).filter(k => k && k !== 'null' && k !== 'undefined');
+    if (batchLabels.length > 0) {
+        makeBatchChart('batchChart', batchLabels, batchTotal, batchSelected, batchDetailed);
     } else clearChart('batchChart');
 
+    // 3. Department Distribution (keep same logic)
+    const deptData = a.departmentTotalCount || a.departmentWiseCount || {};
     if (Object.keys(deptData).length > 0) {
-        const vals = Object.values(deptData);
-        const getCode = (v) => v >= 50 ? '#10b981' : (v >= 20 ? '#eab308' : '#ef4444');
-        makeChart('deptChart', 'bar', deptData, vals.map(getCode));
+        const deptLabels = Object.keys(deptData).filter(k => k && k !== 'null' && k !== 'undefined');
+        const deptVals = deptLabels.map(k => deptData[k]);
+        const getCode = (v) => v >= 50 ? '#10b981' : (v >= 20 ? '#eab308' : '#3b82f6');
+        makeChart('deptChart', 'bar', null, deptVals.map(getCode), deptLabels, [{ data: deptVals, backgroundColor: deptVals.map(getCode), borderRadius: 5 }]);
     } else clearChart('deptChart');
+
+    // 4. Year-wise Trends
+    const trends = a.yearWiseTrends || [];
+    if (trends.length > 0) {
+        const tLabels = trends.map(t => String(t.year || ''));
+        // Selection Rate line chart
+        makeTrendChart('trendSelectionChart', tLabels, trends.map(t => t.selectionRate || 0), 'Selection Rate (%)', '#10b981', '#d1fae5');
+        // Avg CGPA line chart
+        makeTrendChart('trendCgpaChart', tLabels, trends.map(t => t.avgCgpa || 0), 'Avg CGPA', '#3b82f6', '#dbeafe');
+    } else {
+        clearChart('trendSelectionChart');
+        clearChart('trendCgpaChart');
+    }
 }
 
 function clearChart(id) {
@@ -73,19 +99,98 @@ function clearChart(id) {
     if (ctx) ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 }
 
-function makeChart(id, type, dataMap, colors) {
+function makeChart(id, type, dataMap, colors, labels, datasets) {
     const canvas = document.getElementById(id);
     if (!canvas) return;
     if (charts[id]) charts[id].destroy();
-    const labels = Object.keys(dataMap).filter(k => k && k !== 'null' && k !== 'undefined');
-    const values = labels.map(k => dataMap[k]);
-    if (labels.length === 0) return;
+    // Support both old (dataMap) and new (labels+datasets) signatures
+    if (!labels && dataMap) {
+        labels = Object.keys(dataMap).filter(k => k && k !== 'null' && k !== 'undefined');
+        const values = labels.map(k => dataMap[k]);
+        if (labels.length === 0) return;
+        datasets = [{ data: values, backgroundColor: labels.map((_, i) => colors[i % colors.length]), borderRadius: type === 'bar' ? 5 : 0, borderWidth: type === 'doughnut' ? 2 : 0, borderColor: '#fff' }];
+    }
+    if (!labels || labels.length === 0) return;
     charts[id] = new Chart(canvas, {
         type,
-        data: { labels, datasets: [{ data: values, backgroundColor: labels.map((_, i) => colors[i % colors.length]), borderRadius: type === 'bar' ? 5 : 0, borderWidth: type === 'doughnut' ? 2 : 0, borderColor: '#fff' }] },
-        options: { responsive: true, plugins: { legend: { position: type === 'doughnut' ? 'bottom' : 'top', labels: { boxWidth: 12 } } }, scales: type === 'bar' ? { y: { beginAtZero: true, ticks: { stepSize: 1 } } } : {} }
+        data: { labels, datasets },
+        options: { responsive: true, plugins: { legend: { position: type === 'doughnut' ? 'bottom' : 'top', labels: { boxWidth: 12, font: { size: 11 } } } }, scales: type === 'bar' ? { y: { beginAtZero: true, ticks: { stepSize: 1 } } } : {} }
     });
 }
+
+function makeBatchChart(id, labels, totalData, selectedData, detailedData) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Total Students', data: labels.map(k => totalData[k] || 0), backgroundColor: '#93c5fd', borderRadius: 5 },
+                { label: 'Selected', data: labels.map(k => selectedData[k] || 0), backgroundColor: '#10b981', borderRadius: 5 }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { 
+                legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                tooltip: {
+                    callbacks: {
+                        afterBody: function(context) {
+                            if (!detailedData) return '';
+                            let labelStr = context[0].label;
+                            let details = detailedData[labelStr];
+                            if (!details) return '';
+                            return [
+                                'Selected: ' + (details.Selected || 0),
+                                'Pending: ' + (details.Pending || 0),
+                                'Applied: ' + (details.Applied || 0),
+                                'Rejected: ' + (details.Rejected || 0),
+                                'Waiting: ' + (details.Waiting || 0),
+                                'Unselected: ' + (details.Unselected || 0)
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+}
+
+function makeTrendChart(id, labels, data, label, lineColor, fillColor) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label,
+                data,
+                borderColor: lineColor,
+                backgroundColor: fillColor,
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: lineColor,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                borderWidth: 2.5
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { font: { size: 11 } } },
+                x: { ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+}
+
 
 async function loadStudents() {
     const data = await apiFetch('/student');
@@ -104,15 +209,15 @@ function renderStudents(list) {
         return;
     }
     tbody.innerHTML = list.map(s => `
-        <tr>
+        <tr ondblclick="viewStudentDetail(${s.id})" style="cursor:pointer;">
           <td class="font-mono text-xs text-blue-700 dark:text-blue-400 font-semibold">${s.registerNumber || 'NULL'}</td>
-          <td><div class="font-medium dark:text-white text-sm">${s.fullName}</div><div class="text-xs text-gray-400">${s.email || 'NULL'}</div></td>
+          <td><div class="font-medium dark:text-white text-sm"><span onclick="viewStudentDetail(${s.id});event.stopPropagation();" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors">${s.fullName}</span></div><div class="text-xs text-gray-400">${s.email || 'NULL'}</div></td>
           <td class="text-sm text-gray-600 dark:text-gray-400">${s.department || 'NULL'}</td>
           <td><span class="font-semibold text-sm ${s.cgpa && s.cgpa >= 7 ? 'text-green-600' : (s.cgpa ? 'text-amber-600' : 'text-gray-400')}">${s.cgpa || 'NULL'}</span></td>
           <td class="text-sm">${s.batchYear || s.batch || 'NULL'}</td>
           <td class="text-sm">${s.placementStatus || 'NULL'}</td>
           <td>
-            <div class="flex gap-1">
+            <div class="flex gap-1" onclick="event.stopPropagation()">
               <button onclick="openEditModal(${s.id})" class="btn-secondary btn-sm" title="Edit"><i class="fas fa-edit text-blue-500"></i></button>
               <button onclick="downloadAuthFile('/api/reports/student/${s.id}/pdf', 'resume.pdf')" class="btn-secondary btn-sm" title="Download Resume"><i class="fas fa-file-pdf text-red-500"></i></button>
               <button onclick="deleteStudent(${s.id})" class="btn-secondary btn-sm" title="Delete"><i class="fas fa-trash text-red-400"></i></button>
@@ -183,7 +288,7 @@ async function loadPlacements() {
         return;
     }
     tbody.innerHTML = data.data.map(p => `
-        <tr>
+        <tr ondblclick='viewPlacementFullDetail(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
           <td><div class="font-medium dark:text-white text-sm">${p.studentName}</div><div class="text-xs text-blue-500 cursor-pointer" onclick="viewPlacementHistory(${p.studentId}, '${(p.studentName||'').replace(/'/g,"\\'")}', '${(p.registerNumber||'').replace(/'/g,"\\'")}')"><i class="fas fa-history mr-1"></i>${p.registerNumber}</div></td>
           <td class="font-medium text-sm dark:text-white">${p.companyName}</td>
           <td class="text-sm text-gray-600 dark:text-gray-400">${p.jobRole || '—'}</td>
@@ -206,7 +311,7 @@ const searchPlacements = debounce(async (q) => {
     const tbody = document.getElementById('placBody');
     if (!data.data.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-gray-400">No results</td></tr>'; return; }
     tbody.innerHTML = data.data.map(p => `
-        <tr>
+        <tr ondblclick='viewPlacementFullDetail(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
           <td><div class="font-medium dark:text-white text-sm">${p.studentName}</div><div class="text-xs text-blue-500 cursor-pointer" onclick="viewPlacementHistory(${p.studentId}, '${(p.studentName||'').replace(/'/g,"\\'")}', '${(p.registerNumber||'').replace(/'/g,"\\'")}')"><i class="fas fa-history mr-1"></i>${p.registerNumber}</div></td>
           <td class="font-medium text-sm dark:text-white">${p.companyName}</td>
           <td class="text-sm text-gray-600 dark:text-gray-400">${p.jobRole || '—'}</td>
@@ -937,9 +1042,23 @@ async function loadResumeHistory() {
 
 // Drive logic
 function openDriveModal() {
+    window.currentDriveId = null;
     ['dCo','dRole','dPkg','dCgpa','dBatch','dSkills','dDate','dDeadline'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('driveModal').classList.remove('hidden');
 }
+
+window.editDrive = function(d) {
+    window.currentDriveId = d.id;
+    document.getElementById('dCo').value = d.companyName || '';
+    document.getElementById('dRole').value = d.jobRole || '';
+    document.getElementById('dPkg').value = d.packageOffered || '';
+    document.getElementById('dCgpa').value = d.minCgpa || '';
+    document.getElementById('dBatch').value = d.batch || '';
+    document.getElementById('dSkills').value = d.skills || '';
+    document.getElementById('dDate').value = d.driveDate || '';
+    document.getElementById('dDeadline').value = d.applicationDeadline || '';
+    document.getElementById('driveModal').classList.remove('hidden');
+};
 
 async function loadDrives() {
     const data = await apiFetch('/placement-drives');
@@ -947,7 +1066,7 @@ async function loadDrives() {
     const tbody = document.getElementById('drvBody');
     if (!data.data.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-gray-400">No upcoming drives</td></tr>'; return; }
     tbody.innerHTML = data.data.map(d => `
-        <tr>
+        <tr ondblclick='viewDriveFullDetail(${JSON.stringify(d).replace(/'/g, "&#39;")}, "ADMIN")' class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
           <td class="font-medium dark:text-white text-sm">${d.companyName}</td>
           <td class="text-sm">${d.jobRole || '—'}</td>
           <td class="text-sm">${d.minCgpa || '—'}</td>
@@ -956,6 +1075,7 @@ async function loadDrives() {
           <td class="text-sm cursor-pointer hover:text-blue-500" title="View Applied">${d.studentsAppliedCount || 0} applications</td>
           <td>
             <div class="flex gap-1">
+              <button onclick='editDrive(${JSON.stringify(d).replace(/'/g, "&#39;")})' class="btn-secondary btn-sm"><i class="fas fa-edit text-blue-500"></i></button>
               <button onclick="deleteDrive(${d.id})" class="btn-secondary btn-sm"><i class="fas fa-trash text-red-400"></i></button>
             </div>
           </td>
@@ -976,9 +1096,15 @@ async function saveDrive() {
         applicationDeadline: deadline ? new Date(deadline).toISOString().split('T')[0] : null
     };
     if (!body.companyName) return showToast('Company name is required', 'error');
-    const res = await apiFetch('/placement-drives', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
+    let url = '/placement-drives';
+    let method = 'POST';
+    if (window.currentDriveId) {
+        url = '/placement-drives/' + window.currentDriveId;
+        method = 'PUT';
+    }
+    const res = await apiFetch(url, { method:method, headers:authHeaders(), body:JSON.stringify(body) });
     if(res?.success) {
-        showToast('Drive created', 'success');
+        showToast(window.currentDriveId ? 'Drive updated' : 'Drive created', 'success');
         document.getElementById('driveModal').classList.add('hidden');
         loadDrives();
     } else showToast(res?.message || 'Failed', 'error');
@@ -1073,4 +1199,245 @@ async function resolveReport(id) {
     } else {
         showToast(res?.message || 'Failed to resolve report', 'error');
     }
+}
+
+// ── Student Detail View & Edit ──
+
+let currentDetailStudent = null;
+let isDetailEditMode = false;
+
+async function viewStudentDetail(studentId) {
+    // Fetch fresh data from backend
+    const res = await apiFetch('/student/' + studentId);
+    if (!res?.success) {
+        showToast('Failed to load student details', 'error');
+        return;
+    }
+    currentDetailStudent = res.data;
+    isDetailEditMode = false;
+    renderStudentDetailView(currentDetailStudent);
+    document.getElementById('studentDetailModal').classList.remove('hidden');
+    document.getElementById('sdViewContent').classList.remove('hidden');
+    document.getElementById('sdEditContent').classList.add('hidden');
+    document.getElementById('sdEditActions').classList.add('hidden');
+    document.getElementById('sdEditBtn').classList.remove('hidden');
+}
+
+function renderStudentDetailView(s) {
+    const initial = (s.fullName || 'S').charAt(0).toUpperCase();
+    document.getElementById('sdAvatar').textContent = initial;
+    document.getElementById('sdTitle').textContent = s.fullName || 'Student';
+    document.getElementById('sdSubtitle').textContent = (s.registerNumber || '') + (s.department ? ' • ' + s.department : '');
+
+    const val = (v, fallback = '—') => (v !== null && v !== undefined && v !== '') ? v : fallback;
+    const badge = (status) => {
+        if (!status) return '<span class="text-gray-400">—</span>';
+        const cls = status === 'SELECTED' ? 'badge-selected' : status === 'PENDING' ? 'badge-pending' : 'badge-failed';
+        return `<span class="badge ${cls}">${status}</span>`;
+    };
+    const listVal = (v) => {
+        if (!v) return '—';
+        if (Array.isArray(v)) return v.length ? v.join(', ') : '—';
+        return v;
+    };
+    const link = (url, label) => {
+        if (!url) return '—';
+        return `<a href="${url}" target="_blank" class="text-blue-600 hover:underline text-sm">${label || url}</a>`;
+    };
+
+    const section = (title, icon, rows) => `
+        <div class="mb-5">
+            <h4 class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
+                <i class="fas ${icon} text-blue-500 text-xs"></i>${title}
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
+                ${rows.map(r => `
+                    <div>
+                        <p class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">${r[0]}</p>
+                        <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mt-0.5">${r[1]}</p>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+
+    let html = '';
+    html += section('Basic Information', 'fa-user', [
+        ['Register Number', val(s.registerNumber)],
+        ['Full Name', val(s.fullName)],
+        ['Email', val(s.email)],
+        ['Phone', val(s.phone)],
+        ['Department', val(s.department)],
+        ['Gender', val(s.gender)],
+        ['Date of Birth', s.dob ? formatDate(s.dob) : '—'],
+        ['Batch / Year', val(s.batchYear || s.batch)],
+        ['Placement Status', badge(s.placementStatus)],
+    ]);
+    html += section('Academics', 'fa-graduation-cap', [
+        ['CGPA', val(s.cgpa)],
+        ['10th %', val(s.tenthPercent)],
+        ['12th %', val(s.twelfthPercent)],
+        ['UG %', val(s.ugPercentage)],
+        ['Current Backlogs', val(s.currentBacklogs)],
+        ['History of Backlogs', val(s.historyOfBacklogs)],
+        ['Career Gap', val(s.careerGap)],
+    ]);
+    html += section('Skills & Profile', 'fa-code', [
+        ['Skills', val(s.skills)],
+        ['Tools & Technologies', listVal(s.toolsAndTechnologies)],
+        ['Domain', val(s.domain)],
+        ['LinkedIn', link(s.linkedinUrl, 'View Profile')],
+        ['GitHub', link(s.githubUrl, 'View Profile')],
+    ]);
+    html += section('Resume Details', 'fa-file-alt', [
+        ['Career Objective', val(s.careerObjective)],
+        ['Projects', listVal(s.projects)],
+        ['Certifications', listVal(s.certifications)],
+        ['Internships', listVal(s.internships)],
+        ['Achievements', val(s.achievements)],
+        ['Languages', val(s.languages)],
+        ['Hobbies', val(s.hobbies)],
+    ]);
+    if (s.address) {
+        html += section('Other', 'fa-info-circle', [
+            ['Address', val(s.address)],
+        ]);
+    }
+    // Resume download button
+    html += `
+        <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <button onclick="downloadAuthFile('/api/reports/student/${s.id}/pdf', 'resume_${(s.registerNumber||'student')}.pdf')" class="btn-primary btn-sm">
+                <i class="fas fa-file-pdf"></i> Download Resume PDF
+            </button>
+        </div>`;
+
+    document.getElementById('sdViewContent').innerHTML = html;
+}
+
+function toggleStudentEdit() {
+    if (!currentDetailStudent) return;
+    isDetailEditMode = true;
+    document.getElementById('sdViewContent').classList.add('hidden');
+    document.getElementById('sdEditContent').classList.remove('hidden');
+    document.getElementById('sdEditActions').classList.remove('hidden');
+    document.getElementById('sdEditActions').style.display = 'flex';
+    document.getElementById('sdEditBtn').classList.add('hidden');
+    renderStudentDetailEdit(currentDetailStudent);
+}
+
+function renderStudentDetailEdit(s) {
+    const inp = (id, label, value, type = 'text', extra = '') => `
+        <div>
+            <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">${label}</label>
+            <input id="${id}" type="${type}" class="form-input text-sm" value="${value !== null && value !== undefined ? value : ''}" ${extra}/>
+        </div>`;
+    const sel = (id, label, value, options) => `
+        <div>
+            <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">${label}</label>
+            <select id="${id}" class="form-input text-sm">
+                ${options.map(o => `<option value="${o[0]}" ${value === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}
+            </select>
+        </div>`;
+    const txtarea = (id, label, value) => `
+        <div class="col-span-2 md:col-span-3">
+            <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">${label}</label>
+            <textarea id="${id}" class="form-input text-sm" rows="2">${value || ''}</textarea>
+        </div>`;
+
+    const listToStr = (v) => Array.isArray(v) ? v.join(', ') : (v || '');
+
+    let html = '<div class="grid grid-cols-2 md:grid-cols-3 gap-4">';
+    html += inp('sd_regNo', 'Register Number', s.registerNumber, 'text', 'disabled class="form-input text-sm bg-gray-50 dark:bg-gray-700 cursor-not-allowed"');
+    html += inp('sd_fullName', 'Full Name', s.fullName);
+    html += inp('sd_email', 'Email', s.email, 'email');
+    html += inp('sd_phone', 'Phone', s.phone);
+    html += inp('sd_department', 'Department', s.department);
+    html += sel('sd_gender', 'Gender', s.gender || '', [['','Select'],['Male','Male'],['Female','Female'],['Other','Other']]);
+    html += inp('sd_dob', 'Date of Birth', s.dob || '', 'date');
+    html += inp('sd_batchYear', 'Batch Year', s.batchYear || '', 'number');
+    html += sel('sd_placementStatus', 'Placement Status', s.placementStatus || '', [['','N/A'],['SELECTED','Selected'],['PENDING','Pending'],['NOT_ATTENDED','Not Attended']]);
+    html += inp('sd_cgpa', 'CGPA', s.cgpa || '', 'number', 'step="0.1"');
+    html += inp('sd_tenthPercent', '10th %', s.tenthPercent || '');
+    html += inp('sd_twelfthPercent', '12th %', s.twelfthPercent || '');
+    html += inp('sd_ugPercentage', 'UG %', s.ugPercentage || '');
+    html += inp('sd_currentBacklogs', 'Current Backlogs', s.currentBacklogs != null ? s.currentBacklogs : '', 'number');
+    html += inp('sd_historyOfBacklogs', 'History Backlogs', s.historyOfBacklogs != null ? s.historyOfBacklogs : '', 'number');
+    html += inp('sd_careerGap', 'Career Gap', s.careerGap || '');
+    html += inp('sd_skills', 'Skills', s.skills || '');
+    html += inp('sd_domain', 'Domain', s.domain || '');
+    html += inp('sd_linkedinUrl', 'LinkedIn URL', s.linkedinUrl || '', 'url');
+    html += inp('sd_githubUrl', 'GitHub URL', s.githubUrl || '', 'url');
+    html += inp('sd_languages', 'Languages', s.languages || '');
+    html += inp('sd_certifications', 'Certifications', listToStr(s.certifications));
+    html += inp('sd_internships', 'Internships', listToStr(s.internships));
+    html += inp('sd_projects', 'Projects', listToStr(s.projects));
+    html += txtarea('sd_careerObjective', 'Career Objective', s.careerObjective);
+    html += txtarea('sd_achievements', 'Achievements', s.achievements);
+    html += txtarea('sd_hobbies', 'Hobbies', s.hobbies);
+    html += txtarea('sd_address', 'Address', s.address);
+    html += '</div>';
+
+    document.getElementById('sdEditContent').innerHTML = html;
+    // Fix the disabled register number input class
+    const regInput = document.getElementById('sd_regNo');
+    if (regInput) { regInput.className = 'form-input text-sm bg-gray-50 dark:bg-gray-700 cursor-not-allowed'; }
+}
+
+async function saveStudentDetail() {
+    if (!currentDetailStudent) return;
+    const v = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    const body = {
+        fullName: v('sd_fullName'),
+        email: v('sd_email'),
+        phone: v('sd_phone'),
+        department: v('sd_department'),
+        gender: v('sd_gender') || null,
+        dob: v('sd_dob') || null,
+        batchYear: v('sd_batchYear') ? parseInt(v('sd_batchYear')) : null,
+        placementStatus: v('sd_placementStatus') || null,
+        cgpa: v('sd_cgpa') ? parseFloat(v('sd_cgpa')) : null,
+        tenthPercent: v('sd_tenthPercent') || null,
+        twelfthPercent: v('sd_twelfthPercent') || null,
+        ugPercentage: v('sd_ugPercentage') || null,
+        currentBacklogs: v('sd_currentBacklogs') !== '' ? parseInt(v('sd_currentBacklogs')) : null,
+        historyOfBacklogs: v('sd_historyOfBacklogs') !== '' ? parseInt(v('sd_historyOfBacklogs')) : null,
+        careerGap: v('sd_careerGap') || null,
+        skills: v('sd_skills') || null,
+        domain: v('sd_domain') || null,
+        linkedinUrl: v('sd_linkedinUrl') || null,
+        githubUrl: v('sd_githubUrl') || null,
+        languages: v('sd_languages') || null,
+        certifications: v('sd_certifications') || null,
+        internships: v('sd_internships') || null,
+        projects: v('sd_projects') || null,
+        careerObjective: v('sd_careerObjective') || null,
+        achievements: v('sd_achievements') || null,
+        hobbies: v('sd_hobbies') || null,
+        address: v('sd_address') || null,
+    };
+
+    const res = await apiFetch('/student/' + currentDetailStudent.id, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
+    if (res?.success) {
+        showToast('Student updated successfully', 'success');
+        currentDetailStudent = res.data;
+        // Switch back to view mode
+        cancelStudentEdit();
+        renderStudentDetailView(currentDetailStudent);
+        loadStudents(); // refresh the table
+    } else {
+        showToast(res?.message || 'Failed to update student', 'error');
+    }
+}
+
+function cancelStudentEdit() {
+    isDetailEditMode = false;
+    document.getElementById('sdViewContent').classList.remove('hidden');
+    document.getElementById('sdEditContent').classList.add('hidden');
+    document.getElementById('sdEditActions').classList.add('hidden');
+    document.getElementById('sdEditBtn').classList.remove('hidden');
+}
+
+function closeStudentDetail() {
+    document.getElementById('studentDetailModal').classList.add('hidden');
+    isDetailEditMode = false;
+    currentDetailStudent = null;
 }

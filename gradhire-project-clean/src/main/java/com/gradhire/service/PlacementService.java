@@ -62,6 +62,7 @@ public class PlacementService {
 
         Placement saved = placementRepository.save(placement);
         logAction(saved.getId(), student.getId(), "CREATE", "PLACEMENT", "Placement created for " + dto.getCompanyName(), createdBy);
+        syncStudentPlacementStatus(student);
         return toDTO(saved);
     }
 
@@ -86,6 +87,7 @@ public class PlacementService {
         p.setModifiedBy(modifiedBy);
         Placement saved = placementRepository.save(p);
         logAction(p.getId(), p.getStudent().getId(), "UPDATE", "PLACEMENT", "Placement updated", modifiedBy);
+        syncStudentPlacementStatus(p.getStudent());
         return toDTO(saved);
     }
 
@@ -96,9 +98,11 @@ public class PlacementService {
         // Delete associated rounds first
         roundStatusRepository.findByPlacementId(id).forEach(roundStatusRepository::delete);
         Long studentId = p.getStudent().getId();
+        Student student = p.getStudent();
         String company = p.getCompanyName();
         placementRepository.delete(p);
         logAction(id, studentId, "DELETE", "PLACEMENT", "Placement deleted for " + company, deletedBy);
+        syncStudentPlacementStatus(student);
     }
 
     @Transactional
@@ -191,5 +195,20 @@ public class PlacementService {
         dto.setCreatedAt(p.getCreatedAt());
         dto.setUpdatedAt(p.getUpdatedAt());
         return dto;
+    }
+
+    private void syncStudentPlacementStatus(Student student) {
+        List<Placement> placements = placementRepository.findByStudentIdOrderByCreatedAtDesc(student.getId());
+        if (placements.isEmpty()) {
+            student.setPlacementStatus("Unselected");
+        } else {
+            boolean isSelected = placements.stream().anyMatch(p -> p.getOverallStatus() == PlacementStatus.SELECTED);
+            if (isSelected) {
+                student.setPlacementStatus("SELECTED");
+            } else {
+                student.setPlacementStatus(placements.get(0).getOverallStatus().name());
+            }
+        }
+        studentRepository.save(student);
     }
 }

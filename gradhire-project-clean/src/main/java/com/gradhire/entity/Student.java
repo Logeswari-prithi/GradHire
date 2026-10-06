@@ -66,6 +66,9 @@ public class Student {
     @Builder.Default
     private Integer currentBacklogs = 0;
     @Builder.Default
+    @Column(name = "active_backlog")
+    private Integer activeBacklog = 0;
+    @Builder.Default
     private Integer historyOfBacklogs = 0;
     private String careerGap;
     private String placementStatus;

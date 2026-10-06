@@ -7,18 +7,30 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Node / frontend
+node_modules/
+dist/
+dist-ssr/
 *.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# IntelliJ / VS Code
+.idea/
+.vscode/
+
+# OS / IDE files
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Maven build files
+gradhire-project-clean/target/
+gradhire-project-clean/*.log
+
+# Temporary files
+gradhire-project-clean/err.txt
+gradhire-project-clean/out.txt
+gradhire-project-clean/sources.txt
+gradhire-project-clean/maven.tar.gz

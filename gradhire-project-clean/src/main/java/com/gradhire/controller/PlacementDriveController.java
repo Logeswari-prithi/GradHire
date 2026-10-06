@@ -60,7 +60,7 @@ public class PlacementDriveController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<ApiResponse<Void>> deleteDrive(@PathVariable Long id) {
         driveService.deleteDrive(id);
         return ResponseEntity.ok(ApiResponse.success("Drive deleted", null));

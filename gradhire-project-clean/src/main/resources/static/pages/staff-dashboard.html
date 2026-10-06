@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Staff Dashboard - GradHire</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={darkMode:'class'}</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -13,8 +14,7 @@
 <aside class="sidebar">
   <div class="px-4 py-6">
     <div class="flex items-center gap-3 mb-8">
-      <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-graduation-cap text-white"></i></div>
-      <div><h1 class="text-white font-bold text-lg">GradHire</h1><p class="text-blue-300 text-xs">Staff Portal</p></div>
+      <img src="/images/logo.png" alt="GradHire Logo" class="h-12 w-auto object-contain">
     </div>
     <nav class="space-y-0.5">
       <button class="nav-item active" onclick="show('students')"><i class="fas fa-user-graduate"></i>Students</button>
@@ -305,13 +305,13 @@ function renderS(list) {
     const tb = document.getElementById('stb');
     if (!list.length) { tb.innerHTML='<tr><td colspan="6" class="text-center py-10 text-gray-400">No students</td></tr>'; return; }
     tb.innerHTML = list.map(s=>`
-        <tr>
+        <tr ondblclick="viewStudentDetail(${s.id})" style="cursor:pointer;">
           <td class="font-mono text-xs text-blue-700 dark:text-blue-400 font-semibold">${s.registerNumber}</td>
-          <td><div class="font-medium dark:text-white text-sm">${s.fullName}</div><div class="text-xs text-gray-400">${s.email}</div></td>
+          <td><div class="font-medium dark:text-white text-sm"><span onclick="viewStudentDetail(${s.id});event.stopPropagation();" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors">${s.fullName}</span></div><div class="text-xs text-gray-400">${s.email}</div></td>
           <td class="text-sm text-gray-600 dark:text-gray-400">${s.department||'—'}</td>
           <td><span class="font-semibold text-sm ${(s.cgpa||0)>=7?'text-green-600':'text-amber-600'}">${s.cgpa||'—'}</span></td>
           <td class="text-sm">${s.batchYear||'—'}</td>
-          <td><div class="flex items-center gap-2"><span class="text-xs text-gray-400">ID:${s.id}</span><button onclick="downloadAuthFile('/api/reports/student/${s.id}/pdf', 'resume.pdf')" class="btn-secondary btn-sm"><i class="fas fa-file-pdf text-red-500"></i></button></div></td>
+          <td><div class="flex items-center gap-2" onclick="event.stopPropagation()"><span class="text-xs text-gray-400">ID:${s.id}</span><button onclick="downloadAuthFile('/api/reports/student/${s.id}/pdf', 'resume.pdf')" class="btn-secondary btn-sm"><i class="fas fa-file-pdf text-red-500"></i></button></div></td>
         </tr>`).join('');
 }
 const srch = debounce(async q => {
@@ -325,7 +325,7 @@ async function loadP() {
     const tb = document.getElementById('ptb');
     if (!d.data.length) { tb.innerHTML='<tr><td colspan="6" class="text-center py-10 text-gray-400">No placements</td></tr>'; return; }
     tb.innerHTML = d.data.map(p=>`
-        <tr>
+        <tr ondblclick='viewPlacementFullDetail(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
           <td><div class="font-medium dark:text-white text-sm">${p.studentName}</div><div class="text-xs text-blue-500 cursor-pointer" onclick="viewPlacementHistory(${p.studentId}, '${p.studentName}', '${p.registerNumber}')">${p.registerNumber}</div></td>
           <td class="font-medium text-sm dark:text-white">${p.companyName}</td>
           <td class="text-sm text-gray-600 dark:text-gray-400">${p.jobRole||'—'}</td>
@@ -507,9 +507,23 @@ async function doUpload() {
 }
 
 function openDriveModal() {
+    window.currentDriveId = null;
     ['dCo','dRole','dPkg','dCgpa','dBatch','dSkills','dDate','dDeadline'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('driveModal').classList.remove('hidden');
 }
+
+window.editDrive = function(d) {
+    window.currentDriveId = d.id;
+    document.getElementById('dCo').value = d.companyName || '';
+    document.getElementById('dRole').value = d.jobRole || '';
+    document.getElementById('dPkg').value = d.packageOffered || '';
+    document.getElementById('dCgpa').value = d.minCgpa || '';
+    document.getElementById('dBatch').value = d.batch || '';
+    document.getElementById('dSkills').value = d.skills || '';
+    document.getElementById('dDate').value = d.driveDate || '';
+    document.getElementById('dDeadline').value = d.applicationDeadline || '';
+    document.getElementById('driveModal').classList.remove('hidden');
+};
 
 async function loadDrives() {
     const data = await apiFetch('/placement-drives');
@@ -517,7 +531,7 @@ async function loadDrives() {
     const tbody = document.getElementById('drvBody');
     if (!data.data.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-gray-400">No upcoming drives</td></tr>'; return; }
     tbody.innerHTML = data.data.map(d => `
-        <tr>
+        <tr ondblclick='viewDriveFullDetail(${JSON.stringify(d).replace(/'/g, "&#39;")}, "STAFF")' class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
           <td class="font-medium dark:text-white text-sm">${d.companyName}</td>
           <td class="text-sm">${d.jobRole || '—'}</td>
           <td class="text-sm">${d.minCgpa || '—'}</td>
@@ -526,6 +540,7 @@ async function loadDrives() {
           <td class="text-sm cursor-pointer hover:text-blue-500" title="View Applied">${d.studentsAppliedCount || 0} applications</td>
           <td>
             <div class="flex gap-1">
+              <button onclick="editDrive(${JSON.stringify(d).replace(/'/g, "&#39;")})" class="btn-secondary btn-sm"><i class="fas fa-edit text-blue-500"></i></button>
               <button onclick="deleteDrive(${d.id})" class="btn-secondary btn-sm"><i class="fas fa-trash text-red-400"></i></button>
             </div>
           </td>
@@ -546,9 +561,15 @@ async function saveDrive() {
         applicationDeadline: deadline ? new Date(deadline).toISOString().split('T')[0] : null
     };
     if (!body.companyName) return showToast('Company name is required', 'error');
-    const res = await apiFetch('/placement-drives', { method:'POST', headers:authHeaders(), body:JSON.stringify(body) });
+    let url = '/placement-drives';
+    let method = 'POST';
+    if (window.currentDriveId) {
+        url = '/placement-drives/' + window.currentDriveId;
+        method = 'PUT';
+    }
+    const res = await apiFetch(url, { method:method, headers:authHeaders(), body:JSON.stringify(body) });
     if(res?.success) {
-        showToast('Drive created', 'success');
+        showToast(window.currentDriveId ? 'Drive updated' : 'Drive created', 'success');
         document.getElementById('driveModal').classList.add('hidden');
         loadDrives();
     } else showToast(res?.message || 'Failed', 'error');
@@ -784,6 +805,124 @@ async function saveExcelEdits() {
         showToast(`Updated ${successCount}, failed ${failCount}.`, failCount > 0 && successCount > 0 ? 'info' : 'error');
     }
 }
+
+// Student Detail View and Edit
+let currentDetailStudent = null;
+let isDetailEditMode = false;
+
+async function viewStudentDetail(studentId) {
+    const res = await apiFetch('/student/' + studentId);
+    if (!res?.success) { showToast('Failed to load student details', 'error'); return; }
+    currentDetailStudent = res.data;
+    isDetailEditMode = false;
+    renderStudentDetailView(currentDetailStudent);
+    document.getElementById('studentDetailModal').classList.remove('hidden');
+    document.getElementById('sdViewContent').classList.remove('hidden');
+    document.getElementById('sdEditContent').classList.add('hidden');
+    document.getElementById('sdEditActions').classList.add('hidden');
+    document.getElementById('sdEditBtn').classList.remove('hidden');
+}
+
+function renderStudentDetailView(s) {
+    document.getElementById('sdAvatar').textContent = (s.fullName || 'S').charAt(0).toUpperCase();
+    document.getElementById('sdTitle').textContent = s.fullName || 'Student';
+    document.getElementById('sdSubtitle').textContent = (s.registerNumber || '') + (s.department ? ' - ' + s.department : '');
+    var val = function(v, fb) { fb = fb || '\u2014'; return (v !== null && v !== undefined && v !== '') ? v : fb; };
+    var badge = function(st) { if(!st) return '\u2014'; var c = st==='SELECTED'?'badge-selected':st==='PENDING'?'badge-pending':'badge-failed'; return '<span class="badge '+c+'">'+st+'</span>'; };
+    var lv = function(v) { if(!v) return '\u2014'; if(Array.isArray(v)) return v.length?v.join(', '):'\u2014'; return v; };
+    var lnk = function(u, l) { return u ? '<a href="'+u+'" target="_blank" class="text-blue-600 hover:underline text-sm">'+(l||u)+'</a>' : '\u2014'; };
+    var sec = function(t, ic, rows) { return '<div class="mb-5"><h4 class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700"><i class="fas '+ic+' text-blue-500 text-xs"></i>'+t+'</h4><div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">'+rows.map(function(r){return '<div><p class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">'+r[0]+'</p><p class="text-sm font-medium text-gray-800 dark:text-gray-200 mt-0.5">'+r[1]+'</p></div>';}).join('')+'</div></div>'; };
+    var h = '';
+    h += sec('Basic Information','fa-user',[['Register Number',val(s.registerNumber)],['Full Name',val(s.fullName)],['Email',val(s.email)],['Phone',val(s.phone)],['Department',val(s.department)],['Gender',val(s.gender)],['Date of Birth',s.dob?formatDate(s.dob):'\u2014'],['Batch / Year',val(s.batchYear||s.batch)],['Placement Status',badge(s.placementStatus)]]);
+    h += sec('Academics','fa-graduation-cap',[['CGPA',val(s.cgpa)],['10th %',val(s.tenthPercent)],['12th %',val(s.twelfthPercent)],['UG %',val(s.ugPercentage)],['Current Backlogs',val(s.currentBacklogs)],['History of Backlogs',val(s.historyOfBacklogs)],['Career Gap',val(s.careerGap)]]);
+    h += sec('Skills and Profile','fa-code',[['Skills',val(s.skills)],['Tools and Technologies',lv(s.toolsAndTechnologies)],['Domain',val(s.domain)],['LinkedIn',lnk(s.linkedinUrl,'View Profile')],['GitHub',lnk(s.githubUrl,'View Profile')]]);
+    h += sec('Resume Details','fa-file-alt',[['Career Objective',val(s.careerObjective)],['Projects',lv(s.projects)],['Certifications',lv(s.certifications)],['Internships',lv(s.internships)],['Achievements',val(s.achievements)],['Languages',val(s.languages)],['Hobbies',val(s.hobbies)]]);
+    if(s.address) h += sec('Other','fa-info-circle',[['Address',val(s.address)]]);
+    h += '<div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700"><button onclick="downloadAuthFile(\x27/api/reports/student/'+s.id+'/pdf\x27, \x27resume_'+(s.registerNumber||'student')+'.pdf\x27)" class="btn-primary btn-sm"><i class="fas fa-file-pdf"></i> Download Resume PDF</button></div>';
+    document.getElementById('sdViewContent').innerHTML = h;
+}
+
+function toggleStudentEdit() {
+    if(!currentDetailStudent) return;
+    isDetailEditMode = true;
+    document.getElementById('sdViewContent').classList.add('hidden');
+    document.getElementById('sdEditContent').classList.remove('hidden');
+    document.getElementById('sdEditActions').classList.remove('hidden');
+    document.getElementById('sdEditActions').style.display='flex';
+    document.getElementById('sdEditBtn').classList.add('hidden');
+    renderStudentDetailEdit(currentDetailStudent);
+}
+
+function renderStudentDetailEdit(s) {
+    var inp=function(id,label,value,type,extra){return '<div><label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">'+label+'</label><input id="'+id+'" type="'+(type||'text')+'" class="form-input text-sm" value="'+(value!==null&&value!==undefined?value:'')+'" '+(extra||'')+'/></div>';};
+    var sel=function(id,label,value,opts){return '<div><label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">'+label+'</label><select id="'+id+'" class="form-input text-sm">'+opts.map(function(o){return '<option value="'+o[0]+'" '+(value===o[0]?'selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>';};
+    var ta=function(id,label,value){return '<div class="col-span-2 md:col-span-3"><label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">'+label+'</label><textarea id="'+id+'" class="form-input text-sm" rows="2">'+(value||'')+'</textarea></div>';};
+    var ls=function(v){return Array.isArray(v)?v.join(', '):(v||'');};
+    var h='<div class="grid grid-cols-2 md:grid-cols-3 gap-4">';
+    h+=inp('sd_regNo','Register Number',s.registerNumber,'text','disabled');
+    h+=inp('sd_fullName','Full Name',s.fullName);h+=inp('sd_email','Email',s.email,'email');h+=inp('sd_phone','Phone',s.phone);h+=inp('sd_department','Department',s.department);
+    h+=sel('sd_gender','Gender',s.gender||'',[['','Select'],['Male','Male'],['Female','Female'],['Other','Other']]);
+    h+=inp('sd_dob','Date of Birth',s.dob||'','date');h+=inp('sd_batchYear','Batch Year',s.batchYear||'','number');
+    h+=sel('sd_placementStatus','Placement Status',s.placementStatus||'',[['','N/A'],['SELECTED','Selected'],['PENDING','Pending'],['NOT_ATTENDED','Not Attended']]);
+    h+=inp('sd_cgpa','CGPA',s.cgpa||'','number','step="0.1"');h+=inp('sd_tenthPercent','10th %',s.tenthPercent||'');h+=inp('sd_twelfthPercent','12th %',s.twelfthPercent||'');
+    h+=inp('sd_ugPercentage','UG %',s.ugPercentage||'');h+=inp('sd_currentBacklogs','Current Backlogs',s.currentBacklogs!=null?s.currentBacklogs:'','number');
+    h+=inp('sd_historyOfBacklogs','History Backlogs',s.historyOfBacklogs!=null?s.historyOfBacklogs:'','number');h+=inp('sd_careerGap','Career Gap',s.careerGap||'');
+    h+=inp('sd_skills','Skills',s.skills||'');h+=inp('sd_domain','Domain',s.domain||'');h+=inp('sd_linkedinUrl','LinkedIn URL',s.linkedinUrl||'','url');
+    h+=inp('sd_githubUrl','GitHub URL',s.githubUrl||'','url');h+=inp('sd_languages','Languages',s.languages||'');
+    h+=inp('sd_certifications','Certifications',ls(s.certifications));h+=inp('sd_internships','Internships',ls(s.internships));h+=inp('sd_projects','Projects',ls(s.projects));
+    h+=ta('sd_careerObjective','Career Objective',s.careerObjective);h+=ta('sd_achievements','Achievements',s.achievements);
+    h+=ta('sd_hobbies','Hobbies',s.hobbies);h+=ta('sd_address','Address',s.address);h+='</div>';
+    document.getElementById('sdEditContent').innerHTML=h;
+    var ri=document.getElementById('sd_regNo');if(ri) ri.className='form-input text-sm bg-gray-50 dark:bg-gray-700 cursor-not-allowed';
+}
+
+async function saveStudentDetail() {
+    if(!currentDetailStudent) return;
+    var v=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
+    var body={fullName:v('sd_fullName'),email:v('sd_email'),phone:v('sd_phone'),department:v('sd_department'),gender:v('sd_gender')||null,dob:v('sd_dob')||null,batchYear:v('sd_batchYear')?parseInt(v('sd_batchYear')):null,placementStatus:v('sd_placementStatus')||null,cgpa:v('sd_cgpa')?parseFloat(v('sd_cgpa')):null,tenthPercent:v('sd_tenthPercent')||null,twelfthPercent:v('sd_twelfthPercent')||null,ugPercentage:v('sd_ugPercentage')||null,currentBacklogs:v('sd_currentBacklogs')!==''?parseInt(v('sd_currentBacklogs')):null,historyOfBacklogs:v('sd_historyOfBacklogs')!==''?parseInt(v('sd_historyOfBacklogs')):null,careerGap:v('sd_careerGap')||null,skills:v('sd_skills')||null,domain:v('sd_domain')||null,linkedinUrl:v('sd_linkedinUrl')||null,githubUrl:v('sd_githubUrl')||null,languages:v('sd_languages')||null,certifications:v('sd_certifications')||null,internships:v('sd_internships')||null,projects:v('sd_projects')||null,careerObjective:v('sd_careerObjective')||null,achievements:v('sd_achievements')||null,hobbies:v('sd_hobbies')||null,address:v('sd_address')||null};
+    var res=await apiFetch('/student/'+currentDetailStudent.id,{method:'PUT',headers:authHeaders(),body:JSON.stringify(body)});
+    if(res&&res.success){showToast('Student updated successfully','success');currentDetailStudent=res.data;cancelStudentEdit();renderStudentDetailView(currentDetailStudent);loadS();}
+    else showToast((res&&res.message)||'Failed to update student','error');
+}
+
+function cancelStudentEdit() {
+    isDetailEditMode=false;
+    document.getElementById('sdViewContent').classList.remove('hidden');
+    document.getElementById('sdEditContent').classList.add('hidden');
+    document.getElementById('sdEditActions').classList.add('hidden');
+    document.getElementById('sdEditBtn').classList.remove('hidden');
+}
+
+function closeStudentDetail() {
+    document.getElementById('studentDetailModal').classList.add('hidden');
+    isDetailEditMode=false;currentDetailStudent=null;
+}
 </script>
+
+<!-- Student Detail View Modal -->
+<div id="studentDetailModal" class="modal-backdrop hidden" style="z-index:110;" onclick="if(event.target===this)closeStudentDetail()">
+  <div class="modal p-0 dark:bg-gray-800 max-w-3xl w-full" style="max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">
+    <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <div id="sdAvatar" class="w-11 h-11 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0"></div>
+        <div>
+          <h3 id="sdTitle" class="font-semibold dark:text-white text-lg">Student Details</h3>
+          <p id="sdSubtitle" class="text-xs text-gray-500"></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="sdEditBtn" onclick="toggleStudentEdit()" class="btn-secondary btn-sm" title="Edit"><i class="fas fa-edit text-blue-500"></i> Edit</button>
+        <button onclick="closeStudentDetail()" class="text-gray-400 hover:text-gray-600 text-xl leading-none px-2">&times;</button>
+      </div>
+    </div>
+    <div id="sdViewContent" class="overflow-y-auto flex-1 px-6 py-5" style="max-height:calc(90vh - 70px);"></div>
+    <div id="sdEditContent" class="overflow-y-auto flex-1 px-6 py-5 hidden" style="max-height:calc(90vh - 130px);"></div>
+    <div id="sdEditActions" class="hidden flex-shrink-0 px-6 py-3 border-t border-gray-100 dark:border-gray-700 flex gap-3">
+      <button onclick="saveStudentDetail()" class="btn-primary flex-1 justify-center"><i class="fas fa-save"></i> Save Changes</button>
+      <button onclick="cancelStudentEdit()" class="btn-secondary flex-1 justify-center">Cancel</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

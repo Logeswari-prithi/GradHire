@@ -19,8 +19,8 @@
 
     <!-- HEADER -->
     <div class="bg-gradient-to-br from-[#005CB4] to-[#002A5C] px-8 py-10 text-center">
-      <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <i class="fas fa-graduation-cap text-white text-3xl"></i>
+      <div class="flex items-center justify-center mx-auto mb-4">
+        <img src="/images/logo.png" alt="GradHire Logo" class="h-16 w-auto object-contain">
       </div>
       <h1 class="text-3xl font-bold text-white">GradHire</h1>
       <p class="text-blue-200 text-sm mt-1">College Placement & Monitoring Portal</p>
@@ -151,8 +151,8 @@
       const data = await res.json();
 
       if (data.success) {
-        localStorage.setItem('token', data.data.token);
-        localStorage.setItem('user', JSON.stringify(data.data));
+        sessionStorage.setItem('token', data.data.token);
+        sessionStorage.setItem('user', JSON.stringify(data.data));
 
         if (data.data.firstLogin) {
           window.location.href = '/pages/change-password.html';

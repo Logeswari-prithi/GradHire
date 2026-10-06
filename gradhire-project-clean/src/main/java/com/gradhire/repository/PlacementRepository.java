@@ -16,6 +16,7 @@ public interface PlacementRepository extends JpaRepository<Placement, Long> {
     List<Placement> findAllByOrderByCreatedAtDesc();
     
     long countByDriveId(Long driveId);
+    List<Placement> findByDriveId(Long driveId);
 
     @Query("SELECT COUNT(p) FROM Placement p WHERE p.overallStatus = com.gradhire.entity.PlacementStatus.SELECTED")
     long countSelectedPlacements();

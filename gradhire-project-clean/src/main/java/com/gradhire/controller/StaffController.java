@@ -57,8 +57,8 @@ public class StaffController {
     }
 
     @PatchMapping("/notifications/{id}/read")
-    public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable Long id) {
-        notificationService.markAsRead(id);
+    public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable Long id, Authentication auth) {
+        notificationService.markAsRead(id, auth.getName());
         return ResponseEntity.ok(ApiResponse.success("Marked as read", null));
     }
 

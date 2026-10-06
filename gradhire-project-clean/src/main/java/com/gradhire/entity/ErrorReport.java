@@ -33,6 +33,10 @@ public class ErrorReport {
     @Builder.Default
     private String status = "PENDING";
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean resolved = false;
+
     private LocalDateTime resolvedAt;
 
     private String resolvedBy;

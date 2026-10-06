@@ -57,15 +57,18 @@ public class NotificationService {
         return notificationRepository.findByTargetUserOrderByTimeDesc(username);
     }
 
-    public void markAsRead(Long id) {
+    public void markAsRead(Long id, String username) {
         Notification n = notificationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
+        if (n.getTargetUser() != null && !n.getTargetUser().equals(username)) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot mark another user's notification as read");
+        }
         n.setReadStatus(true);
         notificationRepository.save(n);
     }
 
     public void markAllAsRead() {
-        List<Notification> unreadList = notificationRepository.findByReadStatusFalseOrderByTimeDesc();
+        List<Notification> unreadList = notificationRepository.findByTargetUserIsNullAndReadStatusFalseOrderByTimeDesc();
         for (Notification n : unreadList) {
             n.setReadStatus(true);
         }
@@ -73,7 +76,7 @@ public class NotificationService {
     }
 
     public void markAllAsRead(String username) {
-        List<Notification> unreadList = notificationRepository.findByReadStatusFalseOrderByTimeDesc();
+        List<Notification> unreadList = notificationRepository.findByTargetUserIsNullAndReadStatusFalseOrderByTimeDesc();
         List<Notification> userUnread = notificationRepository.findByTargetUserOrderByTimeDesc(username).stream().filter(n -> !n.isReadStatus()).collect(java.util.stream.Collectors.toList());
         
         for (Notification n : unreadList) n.setReadStatus(true);
@@ -84,11 +87,11 @@ public class NotificationService {
     }
 
     public long getUnreadCount() {
-        return notificationRepository.countByReadStatusFalse();
+        return notificationRepository.countByTargetUserIsNullAndReadStatusFalse();
     }
 
     public long getUnreadCount(String username) {
-        return notificationRepository.countByReadStatusFalse() + notificationRepository.countByTargetUserAndReadStatusFalse(username);
+        return notificationRepository.countByTargetUserIsNullAndReadStatusFalse() + notificationRepository.countByTargetUserAndReadStatusFalse(username);
     }
 
     public long getUnreadCountForUser(String username) {
@@ -109,15 +112,20 @@ public class NotificationService {
         return errorReportRepository.findAllWithUser();
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void markReportAsResolved(Long reportId, String adminReply, String resolvedBy) {
-        ErrorReport report = errorReportRepository.findById(reportId)
+        ErrorReport report = errorReportRepository.findByIdWithUser(reportId)
                 .orElseThrow(() -> new ResourceNotFoundException("Report not found"));
         report.setStatus("RESOLVED");
+        report.setResolved(true);
         report.setResolvedAt(java.time.LocalDateTime.now());
         report.setAdminReply(adminReply);
         report.setResolvedBy(resolvedBy);
         errorReportRepository.save(report);
 
-        createNotificationTargeted(resolvedBy, report.getUser().getUsername(), "Report Resolved", "Your issue has been resolved: " + adminReply, "REPORT_SOLVED");
+        // User is already eagerly fetched via JOIN FETCH, safe to access
+        if (report.getUser() != null) {
+            createNotificationTargeted(resolvedBy, report.getUser().getUsername(), "Report Resolved", "Your issue has been resolved: " + adminReply, "REPORT_SOLVED");
+        }
     }
 }

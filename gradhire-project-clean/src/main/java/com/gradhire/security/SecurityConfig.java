@@ -59,7 +59,7 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/", "/index.html", "/pages/**", "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
+                .requestMatchers("/", "/index.html", "/pages/**", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/error").permitAll()
                 .requestMatchers("/api/auth/change-password").authenticated()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/student/photo/**").permitAll()

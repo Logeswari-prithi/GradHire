@@ -7,4 +7,7 @@ import org.springframework.stereotype.Repository;
 public interface ErrorReportRepository extends JpaRepository<ErrorReport, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT e FROM ErrorReport e LEFT JOIN FETCH e.user ORDER BY e.createdAt DESC")
     java.util.List<ErrorReport> findAllWithUser();
+
+    @org.springframework.data.jpa.repository.Query("SELECT e FROM ErrorReport e LEFT JOIN FETCH e.user WHERE e.id = :id")
+    java.util.Optional<ErrorReport> findByIdWithUser(@org.springframework.data.repository.query.Param("id") Long id);
 }
